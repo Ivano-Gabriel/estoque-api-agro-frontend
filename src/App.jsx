@@ -9,7 +9,7 @@ function App() {
     return <Login onLogin={setToken} />
   }
 
-  return <Dashboard token={token} />
+  return <Dashboard token={token} onLogout={() => setToken(null)} />
 }
 
 export default App
