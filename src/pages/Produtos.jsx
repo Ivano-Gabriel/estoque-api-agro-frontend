@@ -8,7 +8,7 @@ function Produtos({ token }) {
   const [categoriasAbertas, setCategoriasAbertas] = useState([])
 
   function recarregarProdutos() {
-    fetch('http://localhost:8081/produtos', {
+    fetch(import.meta.env.VITE_API_URL + '/produtos', {
       headers: { 'Authorization': 'Bearer ' + token }
     })
       .then(res => res.json())
