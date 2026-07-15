@@ -12,113 +12,106 @@ function Layout({ token, onLogout }) {
   }, [])
 
   const menuItems = [
+    { to: '/', label: 'Início', icon: 'ti-home' }, 
     { to: '/produtos', label: 'Produtos', icon: 'ti-box' },
-    { to: '/repor', label: 'Repor', icon: 'ti-refresh' },
+    { to: '/gerenciar', label: 'Gerenciar', icon: 'ti-package' },
     { to: '/lucro', label: 'Lucro', icon: 'ti-chart-bar' },
     { to: '/config', label: 'Config', icon: 'ti-settings' },
   ]
 
-  // ==================== VISÃO DESKTOP ====================
   if (!isMobile) {
     return (
-      <div style={{ display: 'flex', height: '100vh', background: '#f8f8f7' }}>
+      <div style={{ display: 'flex', height: '100vh', background: '#0f172a' }}>
         <aside style={{
-          width: '240px', flexShrink: 0, background: '#fff',
-          borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column'
+          width: '240px', flexShrink: 0, background: '#1e293b',
+          borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column'
         }}>
-          <div style={{ padding: '24px 20px', borderBottom: '1px solid #f0f0f0' }}>
-            <p style={{ fontWeight: '700', margin: 0, color: '#1a1a1a', fontSize: '16px' }}>Estoque Agro</p>
-            <p style={{ fontSize: '12px', color: '#aaa', margin: '4px 0 0' }}>v1.0</p>
+          <div style={{ padding: '24px 20px', borderBottom: '1px solid #334155' }}>
+            <p style={{ fontWeight: '800', margin: 0, color: '#38bdf8', fontSize: '18px' }}>Estoque Inteligente</p> 
+            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0' }}>v1.0</p>
           </div>
           <nav style={{ padding: '16px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {menuItems.map(({ to, label, icon }) => (
-              <NavLink key={to} to={to} style={({ isActive }) => ({
+              <NavLink end={to === '/'} key={to} to={to} style={({ isActive }) => ({
                 display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '10px 14px', borderRadius: '10px', fontSize: '14px', textDecoration: 'none',
-                background: isActive ? '#f0f0ff' : 'transparent', color: isActive ? '#4f46e5' : '#666',
-                fontWeight: isActive ? '600' : '400',
+                padding: '12px 14px', borderRadius: '10px', fontSize: '14px', textDecoration: 'none',
+                background: isActive ? '#0f172a' : 'transparent', color: isActive ? '#38bdf8' : '#94a3b8',
+                fontWeight: isActive ? '600' : '500', transition: 'all 0.2s'
               })}>
                 <i className={`ti ${icon}`} style={{ fontSize: '18px' }} />
                 {label === 'Config' ? 'Configurações' : label}
               </NavLink>
             ))}
           </nav>
-          <div style={{ padding: '16px', borderTop: '1px solid #f0f0f0' }}>
+          <div style={{ padding: '16px', borderTop: '1px solid #334155' }}>
             <button onClick={onLogout} style={{
-              width: '100%', padding: '10px', borderRadius: '8px', background: 'transparent',
-              border: '1px solid #e0e0e0', color: '#666', fontSize: '13px', cursor: 'pointer', fontWeight: '500'
+              width: '100%', padding: '12px', borderRadius: '10px', background: 'transparent',
+              border: '1px solid #ef4444', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontWeight: '600',
+              transition: 'all 0.2s'
             }}>Sair da Conta</button>
           </div>
         </aside>
-        <main style={{ flex: 1, overflow: 'auto', background: '#f8f8f7' }}>
+        <main style={{ flex: 1, overflow: 'auto', background: '#0f172a' }}>
           <Outlet />
         </main>
       </div>
     )
   }
 
-  // ==================== VISÃO MOBILE (MESCLADA) ====================
-  // Os 3 principais vão pro rodapé
   const bottomNavItems = menuItems.filter(item => item.label !== 'Config')
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f8f8f7' }}>
-      
-      {/* HEADER: Título e Hambúrguer */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0f172a' }}>
       <header style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '16px 20px', background: '#fff', borderBottom: '1px solid #f0f0f0', zIndex: 10
+        padding: '16px 20px', background: '#1e293b', borderBottom: '1px solid #334155', zIndex: 10
       }}>
-        <span style={{ fontWeight: '700', fontSize: '18px', color: '#1a1a1a' }}>Estoque Agro</span>
-        <button onClick={() => setMenuAberto(true)} style={{ background: 'none', border: 'none', fontSize: '24px', color: '#1a1a1a', cursor: 'pointer' }}>
+        <span style={{ fontWeight: '800', fontSize: '18px', color: '#38bdf8' }}>Estoque Inteligente</span>
+        <button onClick={() => setMenuAberto(true)} style={{ background: 'none', border: 'none', fontSize: '24px', color: '#f8fafc', cursor: 'pointer' }}>
           ☰
         </button>
       </header>
 
-      {/* CONTEÚDO PRINCIPAL (Espaço de 65px pro rodapé não cobrir conteúdo) */}
-      <main style={{ flex: 1, overflow: 'auto', paddingBottom: '65px' }}>
+      <main style={{ flex: 1, overflow: 'auto', paddingBottom: '70px', background: '#0f172a' }}>
         <Outlet />
       </main>
 
-      {/* BOTTOM NAV: Os 3 atalhos principais */}
       <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, height: '60px',
-        background: '#ffffff', borderTop: '1px solid #f0f0f0',
+        position: 'fixed', bottom: 0, left: 0, right: 0, height: '65px',
+        background: '#1e293b', borderTop: '1px solid #334155',
         display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-        zIndex: 100, boxShadow: '0 -2px 10px rgba(0,0,0,0.03)'
+        zIndex: 100
       }}>
         {bottomNavItems.map(({ to, label, icon }) => (
-          <NavLink key={to} to={to} style={({ isActive }) => ({
+          <NavLink end={to === '/'} key={to} to={to} style={({ isActive }) => ({
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-            textDecoration: 'none', color: isActive ? '#4f46e5' : '#888',
-            fontSize: '11px', fontWeight: isActive ? '600' : '400', width: '33%'
+            textDecoration: 'none', color: isActive ? '#38bdf8' : '#94a3b8',
+            fontSize: '11px', fontWeight: isActive ? '600' : '500', width: `${100 / bottomNavItems.length}%`
           })}>
-            <i className={`ti ${icon}`} style={{ fontSize: '20px' }} />
+            <i className={`ti ${icon}`} style={{ fontSize: '22px' }} />
             <span>{label}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* MENU HAMBÚRGUER (DRAWER) */}
       {menuAberto && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex' }}>
-          <div onClick={() => setMenuAberto(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }} />
+          <div onClick={() => setMenuAberto(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.8)' }} />
           <aside style={{
-            position: 'relative', width: '260px', background: '#fff', height: '100%',
+            position: 'relative', width: '260px', background: '#1e293b', height: '100%',
             display: 'flex', flexDirection: 'column', animation: 'slideIn 0.3s ease-out'
           }}>
-            <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
-              <span style={{ fontWeight: '700', fontSize: '18px', color: '#4f46e5' }}>Menu</span>
-              <button onClick={() => setMenuAberto(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#666' }}>✕</button>
+            <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155' }}>
+              <span style={{ fontWeight: '800', fontSize: '18px', color: '#38bdf8' }}>Menu</span>
+              <button onClick={() => setMenuAberto(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#94a3b8' }}>✕</button>
             </div>
             
             <nav style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* O Hambúrguer exibe todos os itens, útil para a aba Config */}
               {menuItems.map(({ to, label, icon }) => (
-                <NavLink key={to} to={to} onClick={() => setMenuAberto(false)} style={({ isActive }) => ({
+                <NavLink end={to === '/'} key={to} to={to} onClick={() => setMenuAberto(false)} style={({ isActive }) => ({
                   display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px',
-                  fontSize: '15px', textDecoration: 'none', background: isActive ? '#f0f0ff' : 'transparent',
-                  color: isActive ? '#4f46e5' : '#444', fontWeight: isActive ? '600' : '500',
+                  fontSize: '15px', textDecoration: 'none', background: isActive ? '#0f172a' : 'transparent',
+                  color: isActive ? '#38bdf8' : '#e2e8f0', fontWeight: isActive ? '600' : '500',
                 })}>
                   <i className={`ti ${icon}`} style={{ fontSize: '20px' }} />
                   {label === 'Config' ? 'Configurações' : label}
@@ -126,10 +119,10 @@ function Layout({ token, onLogout }) {
               ))}
             </nav>
 
-            <div style={{ padding: '20px', borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ padding: '20px', borderTop: '1px solid #334155' }}>
               <button onClick={onLogout} style={{
-                width: '100%', padding: '12px', borderRadius: '8px', background: '#fff0f0',
-                border: '1px solid #fed7d7', color: '#e53e3e', fontSize: '14px', cursor: 'pointer', fontWeight: '600'
+                width: '100%', padding: '12px', borderRadius: '10px', background: 'transparent',
+                border: '1px solid #ef4444', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontWeight: '600'
               }}>Sair da Conta</button>
             </div>
           </aside>

@@ -6,25 +6,45 @@ function Produtos({ token }) {
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [busca, setBusca] = useState('')
   const [categoriasAbertas, setCategoriasAbertas] = useState([])
+  const [carregando, setCarregando] = useState(true)
 
   function recarregarProdutos() {
-    fetch(import.meta.env.VITE_API_URL + '/produtos', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    })
-      .then(res => res.json())
-      .then(data => setProdutos(data))
-  }
+   
+    console.log("PRODUTOS TENTANDO USAR ESTE TOKEN:", token)
 
+    fetch(import.meta.env.VITE_API_URL + '/produtos', {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`, 
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => {
+      if (!res.ok) {
+        console.log("O JAVA BARROU! Status:", res.status)
+        return null; 
+      }
+      return res.json()
+    })
+    .then(data => {
+      if (data) {
+        setProdutos(data)
+      }
+    })
+    .catch(err => console.log("Erro na requisição:", err))
+    .finally(() => setCarregando(false))
+  }
+  
   useEffect(() => {
     recarregarProdutos()
-  }, [token])
-
+  }, [])
   const produtosFiltrados = produtos.filter(p =>
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.categoria?.nome.toLowerCase().includes(busca.toLowerCase())
   )
 
   const categorias = [...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean))]
+  
   
   function toggleCategoria(cat) {
     setCategoriasAbertas(prev =>
@@ -35,13 +55,13 @@ function Produtos({ token }) {
   return (
     <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
       
-      {/* CABEÇALHO */}
+      
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#1a1a1a', margin: 0 }}>Frente de Estoque</h1>
-        <p style={{ color: '#666', fontSize: '14px', margin: '4px 0 0' }}>Selecione o item para registrar a saída.</p>
+        <p style={{ color: '#666', fontSize: '14px', margin: '4px 0 0' }}>Selecione o item em sua categoria para registrar a saída.</p>
       </div>
 
-      {/* BUSCA */}
+      
       <input
         placeholder="🔍 Buscar produto ou categoria..."
         value={busca}
@@ -53,8 +73,15 @@ function Produtos({ token }) {
         }}
       />
 
-      {/* LISTA DE PRODUTOS EM CARDS (Mobile First) */}
-      {categorias.map(cat => {
+        {carregando ? (
+        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+          <h3 style={{ animation: 'pulse 1.5s infinite' }}>📦 Buscando no estoque...</h3>
+          <p style={{ fontSize: '14px' }}>Aguarde um instante.</p>
+        </div>
+      ) : 
+        
+        categorias.map(cat => {
+      
         const itens = produtosFiltrados.filter(p => p.categoria?.nome === cat)
         if (itens.length === 0) return null
         const aberta = categoriasAbertas.includes(cat)
@@ -62,7 +89,7 @@ function Produtos({ token }) {
         return (
           <div key={cat} style={{ marginBottom: '12px', background: '#fff', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             
-            {/* ACORDEÃO DA CATEGORIA */}
+            
             <div onClick={() => toggleCategoria(cat)} style={{
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               padding: '16px', cursor: 'pointer', borderBottom: aberta ? '1px solid #f0f0f0' : 'none'
@@ -76,7 +103,7 @@ function Produtos({ token }) {
               </div>
             </div>
 
-            {/* ITENS DA CATEGORIA (CARDS) */}
+            
             {aberta && (
               <div style={{ padding: '8px 16px' }}>
                 {itens.map(p => (
@@ -85,7 +112,7 @@ function Produtos({ token }) {
                     padding: '12px 0', borderBottom: '1px solid #f9f9f9'
                   }}>
                     
-                    {/* INFO DO PRODUTO */}
+                    
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontWeight: '600', color: '#1a1a1a', fontSize: '15px' }}>
                         {p.nome} <span style={{ fontWeight: '400', fontSize: '12px', color: '#999' }}>({p.tipo})</span>
@@ -98,7 +125,7 @@ function Produtos({ token }) {
                       </span>
                     </div>
 
-                    {/* BOTÃO DE AÇÃO ÚNICA */}
+                    
                     <button 
                       onClick={() => setProdutoSelecionado(p)}
                       style={{
@@ -118,7 +145,7 @@ function Produtos({ token }) {
         )
       })}
 
-      {/* MODAL DE BAIXA (FormQuantidade agora só recebe ação de vender nativamente) */}
+      
       {produtoSelecionado && (
         <FormQuantidade
           produto={produtoSelecionado}
