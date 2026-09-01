@@ -16,9 +16,34 @@ function Gerenciar({ token }) {
     quantidade: '', precoCusto: ''
   })
 
+  const [formVender, setFormVender] = useState({
+    quantidade: '', precoVenda: ''
+  })
+
+  // Busca o ID do usuário logado (se tiver no token ou localStorage)
+  const [usuarioId, setUsuarioId] = useState(null)
+
+  useEffect(() => {
+    // Tenta pegar o usuário do localStorage (se vc salvou no login)
+    const userData = localStorage.getItem('userData')
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData)
+        setUsuarioId(parsed.id)
+      } catch (e) {
+        console.log('Erro ao parsear userData')
+      }
+    }
+    // Se não tiver, usa o ID 1 como fallback
+    if (!usuarioId) {
+      setUsuarioId(1)
+    }
+  }, [])
+
   const carregarProdutos = () => {
     setCarregando(true)
-    fetch(import.meta.env.VITE_API_URL + '/produtos', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    fetch(apiUrl + '/produtos', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => res.ok ? res.json() : [])
@@ -61,6 +86,13 @@ function Gerenciar({ token }) {
     setModalAberto(true)
   }
 
+  function abrirModalVender(produto) {
+    setProdutoSelecionado(produto)
+    setModoModal('vender')
+    setFormVender({ quantidade: '', precoVenda: '' })
+    setModalAberto(true)
+  }
+
   function abrirModalDeletar(produto) {
     setProdutoSelecionado(produto)
     setModoModal('deletar')
@@ -79,7 +111,8 @@ function Gerenciar({ token }) {
       }
     }
 
-    fetch(import.meta.env.VITE_API_URL + '/produtos', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    fetch(apiUrl + '/produtos', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -99,7 +132,8 @@ function Gerenciar({ token }) {
   }
 
   function handleDeletar() {
-    fetch(import.meta.env.VITE_API_URL + `/produtos/${produtoSelecionado.id}`, {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    fetch(apiUrl + `/produtos/${produtoSelecionado.id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -120,29 +154,64 @@ function Gerenciar({ token }) {
     const qtd = parseInt(formRepor.quantidade)
     const custo = parseFloat(formRepor.precoCusto)
 
-    fetch(import.meta.env.VITE_API_URL + `/produtos/${produtoSelecionado.id}/comprar?quantidade=${qtd}`, {
+    if (!qtd || !custo || qtd <= 0 || custo <= 0) {
+      alert("Preencha quantidade e preço de custo corretamente.")
+      return
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    fetch(apiUrl + `/produtos/${produtoSelecionado.id}/compra-com-custo`, {
       method: 'PUT',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      }
+      },
+      body: JSON.stringify({
+        quantidade: qtd,
+        precoCompra: custo,
+        usuarioId: usuarioId || 1
+      })
     })
     .then(res => {
       if (res.ok) {
-        const historicoExistente = JSON.parse(localStorage.getItem('movimentacoes') || '[]')
-        const novaMovimentacao = {
-          id: Date.now(),
-          tipo: 'COMPRA',
-          produto: produtoSelecionado.nome,
-          quantidade: qtd,
-          valorUnitario: custo,
-          total: qtd * custo,
-          data: new Date().toLocaleDateString('pt-BR')
-        }
-        localStorage.setItem('movimentacoes', JSON.stringify([novaMovimentacao, ...historicoExistente]))
+        setModalAberto(false)
+        carregarProdutos()
+        // Recarrega a página de lucro se estiver aberta (opcional)
+      } else {
+        alert("Erro ao repor estoque.")
+      }
+    })
+    .catch(err => console.log(err))
+  }
+
+  function handleVender() {
+    const qtd = parseInt(formVender.quantidade)
+    const preco = parseFloat(formVender.precoVenda)
+
+    if (!qtd || !preco || qtd <= 0 || preco <= 0) {
+      alert("Preencha quantidade e preço de venda corretamente.")
+      return
+    }
+
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        quantidade: qtd,
+        precoVenda: preco,
+        usuarioId: usuarioId || 1
+      })
+    })
+    .then(res => {
+      if (res.ok) {
         setModalAberto(false)
         carregarProdutos()
       } else {
-        alert("Erro ao repor estoque.")
+        alert("Erro ao vender produto.")
       }
     })
     .catch(err => console.log(err))
@@ -154,7 +223,7 @@ function Gerenciar({ token }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#38bdf8', margin: 0 }}>Gerenciar Estoque</h1>
-          <p style={{ color: '#94a3b8', fontSize: '15px', margin: '4px 0 0' }}>Cadastre, edite, reponha ou exclua seus itens.</p>
+          <p style={{ color: '#94a3b8', fontSize: '15px', margin: '4px 0 0' }}>Cadastre, edite, reponha, venda ou exclua seus itens.</p>
         </div>
         
         <button onClick={abrirModalNovo} style={{ 
@@ -199,7 +268,10 @@ function Gerenciar({ token }) {
                         </span>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button onClick={() => abrirModalVender(p)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #3b82f6', background: 'transparent', color: '#3b82f6', cursor: 'pointer', fontWeight: '600', fontSize: '12px' }}>
+                          Vender
+                        </button>
                         <button onClick={() => abrirModalRepor(p)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #10b981', background: 'transparent', color: '#10b981', cursor: 'pointer', fontWeight: '600', fontSize: '12px' }}>
                           Repor
                         </button>
@@ -237,6 +309,7 @@ function Gerenciar({ token }) {
                 {modoModal === 'novo' && 'Criar Novo Produto'}
                 {modoModal === 'editar' && 'Editar Produto'}
                 {modoModal === 'repor' && 'Repor Estoque'}
+                {modoModal === 'vender' && 'Vender Produto'}
                 {modoModal === 'deletar' && 'Confirmar Exclusão'}
               </h2>
               <button onClick={() => setModalAberto(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
@@ -302,6 +375,25 @@ function Gerenciar({ token }) {
               </div>
             )}
 
+            {modoModal === 'vender' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8' }}>
+                  Produto: <strong style={{ color: '#f8fafc' }}>{produtoSelecionado?.nome}</strong>
+                </p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>
+                  Estoque atual: <strong style={{ color: '#38bdf8' }}>{produtoSelecionado?.quantidadeEstoque}</strong>
+                </p>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94a3b8', marginBottom: '6px' }}>Quantidade a Vender</label>
+                  <input value={formVender.quantidade} onChange={e => setFormVender({...formVender, quantidade: e.target.value})} type="number" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', fontSize: '14px' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94a3b8', marginBottom: '6px' }}>Preço Unitário de Venda (R$)</label>
+                  <input value={formVender.precoVenda} onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} type="number" step="0.01" style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', background: '#0f172a', color: '#f8fafc', fontSize: '14px' }} />
+                </div>
+              </div>
+            )}
+
             {modoModal === 'deletar' && (
               <div style={{ marginBottom: '24px' }}>
                 <p style={{ margin: 0, fontSize: '15px', color: '#e2e8f0', lineHeight: '1.6' }}>
@@ -324,6 +416,12 @@ function Gerenciar({ token }) {
               {modoModal === 'repor' && (
                 <button onClick={handleRepor} style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', background: '#10b981', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
                   Confirmar Reposição
+                </button>
+              )}
+
+              {modoModal === 'vender' && (
+                <button onClick={handleVender} style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', background: '#3b82f6', color: '#fff', fontWeight: '600', cursor: 'pointer' }}>
+                  Confirmar Venda
                 </button>
               )}
 
