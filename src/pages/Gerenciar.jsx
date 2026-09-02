@@ -179,7 +179,6 @@ function Gerenciar({ token }) {
       if (res.ok) {
         setModalAberto(false)
         carregarProdutos()
-        // Recarrega a página de lucro se estiver aberta (opcional)
       } else {
         alert("Erro ao repor estoque.")
       }
@@ -197,11 +196,13 @@ function Gerenciar({ token }) {
     }
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    
     console.log('🔍 Dados que vou enviar:', {
-    quantidade: qtd,
-    precoVenda: precoVenda,
-    usuarioId: usuarioId || 1
-  })
+      quantidade: qtd,
+      precoVenda: preco,
+      usuarioId: usuarioId || 1
+    })
+
     fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
       method: 'PUT',
       headers: {
@@ -218,11 +219,15 @@ function Gerenciar({ token }) {
       if (res.ok) {
         setModalAberto(false)
         carregarProdutos()
+        alert("✅ Venda realizada com sucesso!")
       } else {
-        alert("Erro ao vender produto.")
+        alert("❌ Erro ao vender produto.")
       }
     })
-    .catch(err => console.log(err))
+    .catch(err => {
+      console.log(err)
+      alert("❌ Erro ao vender produto.")
+    })
   }
 
   return (
