@@ -18,19 +18,19 @@ function Login({ onLogin }) {
     })
     .then(res => {
       if (res.ok) {
-        return res.json() // ← MUDEI AQUI: agora espera um JSON
+        return res.text() // ← VOLTA A SER TEXTO!
       }
       throw new Error('E-mail ou senha incorretos.')
     })
-    .then(data => {
-      // 🔥 SALVA O USUÁRIO NO LOCALSTORAGE
+    .then(token => {
+      // 🔥 SALVA O USUÁRIO COM ID 1 (já que o backend não manda)
       localStorage.setItem('userData', JSON.stringify({
-        id: data.usuario?.id || 1,  // Pega o ID do usuário que voltou
-        email: data.usuario?.email || email
+        id: 1,
+        email: email
       }))
       
       // Chama a função do App com o token
-      onLogin(data.token)
+      onLogin(token)
     })
     .catch(err => {
       setErro(err.message)
