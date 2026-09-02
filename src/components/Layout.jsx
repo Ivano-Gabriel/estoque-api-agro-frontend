@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
+import { LayoutDashboard, Package, ShoppingCart, DollarSign, Settings, Menu, X, LogOut } from 'lucide-react'
 
 function Layout({ token, onLogout }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
@@ -12,121 +13,117 @@ function Layout({ token, onLogout }) {
   }, [])
 
   const menuItems = [
-    { to: '/', label: 'Início', icon: 'ti-home' }, 
-    { to: '/produtos', label: 'Produtos', icon: 'ti-box' },
-    { to: '/gerenciar', label: 'Gerenciar', icon: 'ti-package' },
-    { to: '/lucro', label: 'Lucro', icon: 'ti-chart-bar' },
-    { to: '/config', label: 'Config', icon: 'ti-settings' },
+    { to: '/', label: 'Início', icon: LayoutDashboard }, 
+    { to: '/produtos', label: 'Produtos', icon: Package },
+    { to: '/gerenciar', label: 'Gerenciar', icon: ShoppingCart },
+    { to: '/lucro', label: 'Financeiro', icon: DollarSign },
+    { to: '/config', label: 'Configurações', icon: Settings },
   ]
 
+  // === VERSÃO DESKTOP ===
   if (!isMobile) {
     return (
-      <div style={{ display: 'flex', height: '100vh', background: '#0f172a' }}>
-        <aside style={{
-          width: '240px', flexShrink: 0, background: '#1e293b',
-          borderRight: '1px solid #334155', display: 'flex', flexDirection: 'column'
-        }}>
-          <div style={{ padding: '24px 20px', borderBottom: '1px solid #334155' }}>
-            <p style={{ fontWeight: '800', margin: 0, color: '#38bdf8', fontSize: '18px' }}>Estoque Inteligente</p> 
-            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0' }}>v1.0</p>
+      <div className="flex h-screen bg-slate-50 font-sans text-slate-800">
+        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
+          <div className="p-6 border-b border-slate-100">
+            <p className="font-bold text-lg text-blue-600 tracking-tight">Estoque Inteligente</p> 
+            <p className="text-xs text-slate-400 mt-1">Version • v2.0</p>
           </div>
-          <nav style={{ padding: '16px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {menuItems.map(({ to, label, icon }) => (
-              <NavLink end={to === '/'} key={to} to={to} style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: '12px',
-                padding: '12px 14px', borderRadius: '10px', fontSize: '14px', textDecoration: 'none',
-                background: isActive ? '#0f172a' : 'transparent', color: isActive ? '#38bdf8' : '#94a3b8',
-                fontWeight: isActive ? '600' : '500', transition: 'all 0.2s'
-              })}>
-                <i className={`ti ${icon}`} style={{ fontSize: '18px' }} />
-                {label === 'Config' ? 'Configurações' : label}
+          
+          <nav className="flex-1 p-4 flex flex-col gap-2">
+            {menuItems.map(({ to, label, icon: Icon }) => (
+              <NavLink end={to === '/'} key={to} to={to} 
+                className={({ isActive }) => `
+                  flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
+                  ${isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
+                `}>
+                <Icon size={20} />
+                {label}
               </NavLink>
             ))}
           </nav>
-          <div style={{ padding: '16px', borderTop: '1px solid #334155' }}>
-            <button onClick={onLogout} style={{
-              width: '100%', padding: '12px', borderRadius: '10px', background: 'transparent',
-              border: '1px solid #ef4444', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontWeight: '600',
-              transition: 'all 0.2s'
-            }}>Sair da Conta</button>
+
+          <div className="p-4 border-t border-slate-100">
+            <button onClick={onLogout} className="flex items-center justify-center gap-2 w-full p-3 rounded-lg text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors">
+              <LogOut size={18} />
+              Sair da Conta
+            </button>
           </div>
         </aside>
-        <main style={{ flex: 1, overflow: 'auto', background: '#0f172a' }}>
-          <Outlet />
+
+        <main className="flex-1 overflow-auto bg-slate-50 p-8">
+          <div className="max-w-6xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     )
   }
 
-  const bottomNavItems = menuItems.filter(item => item.label !== 'Config')
+  // === VERSÃO MOBILE ===
+  const bottomNavItems = menuItems.filter(item => item.label !== 'Configurações')
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0f172a' }}>
-      <header style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '16px 20px', background: '#1e293b', borderBottom: '1px solid #334155', zIndex: 10
-      }}>
-        <span style={{ fontWeight: '800', fontSize: '18px', color: '#38bdf8' }}>Estoque Inteligente</span>
-        <button onClick={() => setMenuAberto(true)} style={{ background: 'none', border: 'none', fontSize: '24px', color: '#f8fafc', cursor: 'pointer' }}>
-          ☰
+    <div className="flex flex-col h-screen bg-slate-50 font-sans text-slate-800">
+      {/* Header Mobile */}
+      <header className="flex justify-between items-center p-4 bg-white border-b border-slate-200 z-10 shadow-sm">
+        <span className="font-bold text-lg text-blue-600">Estoque Inteligente</span>
+        <button onClick={() => setMenuAberto(true)} className="text-slate-600 hover:text-blue-600">
+          <Menu size={28} />
         </button>
       </header>
 
-      <main style={{ flex: 1, overflow: 'auto', paddingBottom: '70px', background: '#0f172a' }}>
+      {/* Conteúdo Principal */}
+      <main className="flex-1 overflow-auto pb-20 bg-slate-50 p-4">
         <Outlet />
       </main>
 
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, height: '65px',
-        background: '#1e293b', borderTop: '1px solid #334155',
-        display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-        zIndex: 100
-      }}>
-        {bottomNavItems.map(({ to, label, icon }) => (
-          <NavLink end={to === '/'} key={to} to={to} style={({ isActive }) => ({
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-            textDecoration: 'none', color: isActive ? '#38bdf8' : '#94a3b8',
-            fontSize: '11px', fontWeight: isActive ? '600' : '500', width: `${100 / bottomNavItems.length}%`
-          })}>
-            <i className={`ti ${icon}`} style={{ fontSize: '22px' }} />
+      {/* Navegação Inferior (Bottom Nav) */}
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        {bottomNavItems.map(({ to, label, icon: Icon }) => (
+          <NavLink end={to === '/'} key={to} to={to} 
+            className={({ isActive }) => `
+              flex flex-col items-center gap-1 w-full text-xs font-medium transition-colors
+              ${isActive ? 'text-blue-600' : 'text-slate-500'}
+            `}>
+            <Icon size={22} className={({ isActive }) => isActive ? "fill-blue-50" : ""} />
             <span>{label}</span>
           </NavLink>
         ))}
       </nav>
 
+      {/* Menu Lateral Deslizante Mobile */}
       {menuAberto && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex' }}>
-          <div onClick={() => setMenuAberto(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(15, 23, 42, 0.8)' }} />
-          <aside style={{
-            position: 'relative', width: '260px', background: '#1e293b', height: '100%',
-            display: 'flex', flexDirection: 'column', animation: 'slideIn 0.3s ease-out'
-          }}>
-            <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155' }}>
-              <span style={{ fontWeight: '800', fontSize: '18px', color: '#38bdf8' }}>Menu</span>
-              <button onClick={() => setMenuAberto(false)} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#94a3b8' }}>✕</button>
+        <div className="fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setMenuAberto(false)} />
+          <aside className="relative w-64 bg-white h-full flex flex-col shadow-xl animate-in slide-in-from-right">
+            <div className="p-5 flex justify-between items-center border-b border-slate-100">
+              <span className="font-bold text-lg text-slate-800">Menu</span>
+              <button onClick={() => setMenuAberto(false)} className="text-slate-400 hover:text-slate-700">
+                <X size={24} />
+              </button>
             </div>
             
-            <nav style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {menuItems.map(({ to, label, icon }) => (
-                <NavLink end={to === '/'} key={to} to={to} onClick={() => setMenuAberto(false)} style={({ isActive }) => ({
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px',
-                  fontSize: '15px', textDecoration: 'none', background: isActive ? '#0f172a' : 'transparent',
-                  color: isActive ? '#38bdf8' : '#e2e8f0', fontWeight: isActive ? '600' : '500',
-                })}>
-                  <i className={`ti ${icon}`} style={{ fontSize: '20px' }} />
-                  {label === 'Config' ? 'Configurações' : label}
+            <nav className="p-4 flex-1 flex flex-col gap-2">
+              {menuItems.map(({ to, label, icon: Icon }) => (
+                <NavLink end={to === '/'} key={to} to={to} onClick={() => setMenuAberto(false)}
+                  className={({ isActive }) => `
+                    flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
+                    ${isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-600 active:bg-slate-50'}
+                  `}>
+                  <Icon size={20} />
+                  {label}
                 </NavLink>
               ))}
             </nav>
 
-            <div style={{ padding: '20px', borderTop: '1px solid #334155' }}>
-              <button onClick={onLogout} style={{
-                width: '100%', padding: '12px', borderRadius: '10px', background: 'transparent',
-                border: '1px solid #ef4444', color: '#ef4444', fontSize: '14px', cursor: 'pointer', fontWeight: '600'
-              }}>Sair da Conta</button>
+            <div className="p-5 border-t border-slate-100">
+              <button onClick={onLogout} className="flex items-center justify-center gap-2 w-full p-3 rounded-lg text-sm font-medium text-red-600 border border-red-200 active:bg-red-50">
+                <LogOut size={18} />
+                Sair
+              </button>
             </div>
           </aside>
-          <style>{`@keyframes slideIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }`}</style>
         </div>
       )}
     </div>
