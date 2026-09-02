@@ -1,6 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useState } from 'react'
-import Login from './pages/Login'
 import Layout from './components/Layout'
 import Hub from './pages/Hub'
 import Produtos from './pages/Produtos'
@@ -9,11 +8,8 @@ import Lucro from './pages/Lucro'
 import Config from './pages/Config'
 
 function App() {
-  const [token, setToken] = useState(null)
-
-  if (!token) {
-    return <Login onLogin={setToken} />
-  }
+  // Inicializamos com um token fictício para liberar o acesso direto
+  const [token, setToken] = useState('visitante_liberado')
 
   return (
     <BrowserRouter>
