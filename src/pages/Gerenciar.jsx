@@ -197,6 +197,11 @@ function Gerenciar({ token }) {
     }
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    console.log('🔍 Dados que vou enviar:', {
+    quantidade: qtd,
+    precoVenda: preco,
+    usuarioId: usuarioId || 1
+  })
     fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
       method: 'PUT',
       headers: {
