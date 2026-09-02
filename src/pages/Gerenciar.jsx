@@ -24,20 +24,23 @@ function Gerenciar({ token }) {
   const [usuarioId, setUsuarioId] = useState(null)
 
   useEffect(() => {
-    // Tenta pegar o usuário do localStorage (se vc salvou no login)
+    // Tenta pegar o usuário do localStorage
     const userData = localStorage.getItem('userData')
+    
     if (userData) {
       try {
         const parsed = JSON.parse(userData)
         setUsuarioId(parsed.id)
+        console.log('✅ Usuário carregado do localStorage:', parsed.id)
+        return // Sai da função se achou
       } catch (e) {
         console.log('Erro ao parsear userData')
       }
     }
-    // Se não tiver, usa o ID 1 como fallback
-    if (!usuarioId) {
-      setUsuarioId(1)
-    }
+    
+    // Se chegou aqui, é porque não achou no localStorage
+    console.log('⚠️ Usuário não encontrado no localStorage, usando ID 1')
+    setUsuarioId(1)
   }, [])
 
   const carregarProdutos = () => {
