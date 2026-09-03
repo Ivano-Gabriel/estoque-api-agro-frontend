@@ -5,7 +5,7 @@ import Hub from './pages/Hub'
 import Produtos from './pages/Produtos'
 import Gerenciar from './pages/Gerenciar'
 import Lucro from './pages/Lucro'
-import Config from './pages/Config'
+import Configuracoes from './pages/Configuracoes'
 
 function App() {
   // Inicializamos com um token fictício para liberar o acesso direto
@@ -19,7 +19,7 @@ function App() {
           <Route path="produtos" element={<Produtos token={token} />} />
           <Route path="gerenciar" element={<Gerenciar token={token} />} />
           <Route path="lucro" element={<Lucro token={token} />} />
-          <Route path="config" element={<Config />} />
+          <Route path="config" element={<Configuracoes token={token} />} />
         </Route>
       </Routes>
     </BrowserRouter>

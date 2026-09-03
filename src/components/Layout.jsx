@@ -13,7 +13,7 @@ function Layout({ token, onLogout }) {
     { to: '/config', label: 'Configurações', icon: Settings },
   ]
 
-  const bottomNavItems = menuItems.filter(item => item.label !== 'Configurações')
+  const bottomNavItems = menuItems
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
