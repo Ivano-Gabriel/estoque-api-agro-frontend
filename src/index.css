@@ -1,1 +1,63 @@
 @import "tailwindcss";
+
+/* MODO CLARO - Texto Preto Puro */
+:root {
+  --bg-color: #f8fafc;
+  --text-color: #000000;
+  --bg-image: url('/branco.jpeg'); /* Sua foto clara aqui */
+  --glass-bg: rgba(255, 255, 255, 0.75); 
+  --glass-border: rgba(0, 0, 0, 0.15);
+  --glass-line: rgba(0, 0, 0, 0.8); 
+  --glass-shadow: rgba(0, 0, 0, 0.05);
+}
+
+/* MODO ESCURO - Texto Branco Puro */
+.dark {
+  --bg-color: #050505;
+  --text-color: #ffffff; /* BRANCO PURO */
+  --glass-bg: rgba(10, 10, 12, 0.6); 
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-line: rgba(255, 255, 255, 0.5); 
+  --glass-shadow: rgba(0, 0, 0, 0.8);
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  background-image: var(--bg-image); /* O CSS troca a imagem sozinho agora */
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  transition: background-color 0.4s ease, color 0.4s ease, background-image 0.4s ease;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-left: 2px solid var(--glass-line);
+  box-shadow: 0 10px 40px var(--glass-shadow);
+  border-radius: 2px;
+  transition: all 0.4s ease;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-line);
+  border-radius: 0px;
+}
+
+/* O Fundo Blindado que troca sozinho */
+.bg-dinamico { 
+  background-image: url('/branco.jpeg'); 
+}
+.dark .bg-dinamico { 
+  background-image: url('/apopo.jpeg'); /* Confirme se a sua foto escura chama apopo.jpeg mesmo */
+}

@@ -1,119 +1,123 @@
+import { Outlet, Link, useLocation } from 'react-router-dom'
+import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool } from 'lucide-react'
 import { useState } from 'react'
-import { Outlet, NavLink } from 'react-router-dom'
-import { LayoutDashboard, Package, ShoppingCart, DollarSign, Settings, Menu, X, LogOut } from 'lucide-react'
 
 function Layout({ token, onLogout }) {
+  const location = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
 
-  const menuItems = [
-    { to: '/', label: 'Início', icon: LayoutDashboard }, 
-    { to: '/produtos', label: 'Produtos', icon: Package },
-    { to: '/gerenciar', label: 'Gerenciar', icon: ShoppingCart },
-    { to: '/lucro', label: 'Financeiro', icon: DollarSign },
-    { to: '/config', label: 'Configurações', icon: Settings },
+  const navItems = [
+    { name: 'Hub', path: '/', icon: LayoutDashboard },
+    { name: 'Catálogo', path: '/produtos', icon: PackageSearch },
+    { name: 'Gerenciar', path: '/gerenciar', icon: PenTool },
+    { name: 'Caixa', path: '/lucro', icon: DollarSign },
+    { name: 'Ajustes', path: '/config', icon: Settings },
   ]
 
-  const bottomNavItems = menuItems
+  const LogoI = () => (
+    <div className="flex items-center justify-center w-7 h-7 border border-current bg-current/5 font-extrabold text-sm tracking-tighter">
+      I
+    </div>
+  )
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-      
-      {/* ================= DESKTOP SIDEBAR (Aparece apenas em telas médias/grandes 'md') ================= */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col shrink-0">
-        <div className="p-6 border-b border-slate-100">
-          <p className="font-bold text-lg text-blue-600 tracking-tight">Estoque Inteligente</p> 
-          <p className="text-xs text-slate-400 mt-1">Version • v2.0</p>
-        </div>
+    <>
+      {/* CAMADA BLINDADA DA IMAGEM DE FUNDO */}
+      <div 
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/apopo.jpeg')" }}
+      ></div>
+
+      {/* SISTEMA (Fica por cima da imagem) */}
+      <div className="min-h-screen flex relative z-10 text-current">
         
-        <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
-          {menuItems.map(({ to, label, icon: Icon }) => (
-            <NavLink end={to === '/'} key={to} to={to} 
-              className={({ isActive }) => `
-                flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-                ${isActive ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}
-              `}>
-              <Icon size={20} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
+        <aside className="hidden md:flex glass-panel shrink-0 w-20 lg:w-64 flex-col justify-between py-6 px-4 m-4 mr-0 transition-all duration-300 !border-l-0 border-r">
+          <div>
+            <div className="flex items-center justify-center lg:justify-start gap-3 px-2 mb-12">
+              <LogoI />
+              <h1 className="hidden lg:block text-lg font-bold tracking-[0.2em] uppercase mt-1">
+                ESTOQUE
+              </h1>
+            </div>
 
-        <div className="p-4 border-t border-slate-100">
-          <button onClick={onLogout} className="flex items-center justify-center gap-2 w-full p-3 rounded-lg text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors cursor-pointer">
-            <LogOut size={18} />
-            Sair da Conta
-          </button>
-        </div>
-      </aside>
-
-      {/* ================= CONTEÚDO PRINCIPAL & MOBILE HEADER ================= */}
-      <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
-        
-        {/* Header Mobile (Aparece apenas em telas pequenas, some em 'md') */}
-        <header className="md:hidden flex justify-between items-center p-4 bg-white border-b border-slate-200 shrink-0 z-20 shadow-sm">
-          <span className="font-bold text-lg text-blue-600">Estoque Inteligente</span>
-          <button onClick={() => setMenuAberto(true)} className="text-slate-600 hover:text-blue-600 cursor-pointer p-1">
-            <Menu size={26} />
-          </button>
-        </header>
-
-        {/* Área onde as páginas rodam */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-8 pb-24 md:pb-8">
-          <div className="max-w-6xl mx-auto w-full">
-            <Outlet />
+            <nav className="space-y-2">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const ativo = location.pathname === item.path
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={`flex items-center gap-4 px-4 py-3 rounded-sm transition-all duration-300 group ${
+                      ativo 
+                      ? 'bg-current/10 border-l-2 border-current font-black' 
+                      : 'opacity-60 hover:opacity-100 hover:bg-current/5 border-l-2 border-transparent'
+                    }`}
+                  >
+                    <Icon size={18} className={ativo ? '' : 'group-hover:scale-110 transition-transform'} strokeWidth={ativo ? 2.5 : 2} />
+                    <span className="hidden lg:block text-[11px] font-bold tracking-widest uppercase">{item.name}</span>
+                  </Link>
+                )
+              })}
+            </nav>
           </div>
-        </main>
 
-        {/* Bottom Nav Mobile (Aparece apenas em celulares na parte inferior) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 flex justify-around items-center z-40 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-          {bottomNavItems.map(({ to, label, icon: Icon }) => (
-            <NavLink end={to === '/'} key={to} to={to} 
-              className={({ isActive }) => `
-                flex flex-col items-center justify-center gap-1 w-full h-full text-[11px] font-medium transition-colors
-                ${isActive ? 'text-blue-600 font-bold' : 'text-slate-500'}
-              `}>
-              <Icon size={20} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </div>
+          <button 
+            onClick={onLogout}
+            className="flex items-center gap-4 px-4 py-3 rounded-sm opacity-60 hover:opacity-100 hover:bg-rose-500/10 hover:text-rose-500 transition-all duration-300 group mt-auto"
+          >
+            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
+            <span className="hidden lg:block text-[11px] font-bold tracking-widest uppercase">Encerrar</span>
+          </button>
+        </aside>
 
-      {/* ================= MENU DESLIZANTE LATERAL MOBILE (Drawer) ================= */}
-      {menuAberto && (
-        <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setMenuAberto(false)} />
-          <aside className="relative w-64 bg-white h-full flex flex-col shadow-2xl z-10">
-            <div className="p-5 flex justify-between items-center border-b border-slate-100">
-              <span className="font-bold text-lg text-slate-800">Menu</span>
-              <button onClick={() => setMenuAberto(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X size={24} />
-              </button>
+        <main className="flex-1 overflow-y-auto relative p-4 md:p-8 pb-24 md:pb-8">
+          <div className="md:hidden flex justify-between items-center mb-6 glass-panel p-4 !border-l-0 relative">
+            <div className="flex items-center gap-3">
+              <LogoI />
+              <span className="font-bold tracking-[0.2em] uppercase text-xs mt-1">ESTOQUE</span>
             </div>
             
-            <nav className="p-4 flex-1 flex flex-col gap-2 overflow-y-auto">
-              {menuItems.map(({ to, label, icon: Icon }) => (
-                <NavLink end={to === '/'} key={to} to={to} onClick={() => setMenuAberto(false)}
-                  className={({ isActive }) => `
-                    flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors
-                    ${isActive ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-slate-600 active:bg-slate-50'}
-                  `}>
-                  <Icon size={20} />
-                  {label}
-                </NavLink>
-              ))}
-            </nav>
+            <button 
+              onClick={() => setMenuAberto(!menuAberto)} 
+              className="p-1 border border-transparent transition-all"
+            >
+              <Menu size={18} />
+            </button>
 
-            <div className="p-5 border-t border-slate-100">
-              <button onClick={onLogout} className="flex items-center justify-center gap-2 w-full p-3 rounded-lg text-sm font-medium text-red-600 border border-red-200 active:bg-red-50 cursor-pointer">
-                <LogOut size={18} />
-                Sair
-              </button>
-            </div>
-          </aside>
-        </div>
-      )}
-    </div>
+            {menuAberto && (
+              <div className="absolute top-16 right-4 glass-panel p-2 flex flex-col gap-2 min-w-[120px] animate-in slide-in-from-top-2 z-50">
+                <button onClick={onLogout} className="flex items-center gap-2 text-xs text-rose-600 hover:bg-rose-500/10 p-2 uppercase tracking-widest font-bold text-left">
+                  <LogOut size={14} /> Sair
+                </button>
+              </div>
+            )}
+          </div>
+
+          <Outlet />
+        </main>
+
+        <nav className="md:hidden fixed bottom-0 left-0 w-full glass-panel !border-l-0 !border-b-0 !border-x-0 !border-t border-t-current/10 flex justify-around items-center p-3 z-50">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const ativo = location.pathname === item.path
+            return (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={`flex flex-col items-center gap-1 p-2 transition-all ${
+                  ativo ? 'opacity-100 font-black' : 'opacity-50 hover:opacity-100'
+                }`}
+              >
+                <Icon size={20} strokeWidth={ativo ? 2.5 : 1.5} />
+                <span className="text-[9px] uppercase tracking-widest font-bold">{item.name}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+      </div>
+    </>
   )
 }
 

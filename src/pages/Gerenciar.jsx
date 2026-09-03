@@ -5,7 +5,6 @@ function Gerenciar({ token }) {
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
 
-  // Filtros
   const [termoBusca, setTermoBusca] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
 
@@ -13,10 +12,7 @@ function Gerenciar({ token }) {
   const [modoModal, setModoModal] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
 
-  const [form, setForm] = useState({
-    nome: '', preco: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE'
-  })
-
+  const [form, setForm] = useState({ nome: '', preco: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
   const [usuarioId, setUsuarioId] = useState(null)
@@ -24,13 +20,8 @@ function Gerenciar({ token }) {
   useEffect(() => {
     const userData = localStorage.getItem('userData')
     if (userData) {
-      try {
-        const parsed = JSON.parse(userData)
-        setUsuarioId(parsed.id)
-        return
-      } catch (e) {
-        console.log('Erro ao parsear userData')
-      }
+      try { setUsuarioId(JSON.parse(userData).id); return; } 
+      catch (e) { console.log('Erro parse') }
     }
     setUsuarioId(1)
   }, [])
@@ -38,268 +29,155 @@ function Gerenciar({ token }) {
   const carregarProdutos = () => {
     setCarregando(true)
     const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + '/produtos', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    fetch(apiUrl + '/produtos', { headers: { 'Authorization': `Bearer ${token}` } })
     .then(res => res.ok ? res.json() : [])
     .then(data => setProdutos(data))
     .catch(err => console.log(err))
     .finally(() => setCarregando(false))
   }
 
-  useEffect(() => {
-    carregarProdutos()
-  }, [token])
+  useEffect(() => { carregarProdutos() }, [token])
 
   const categoriasExistentes = [...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean))]
 
-  // Lógica de Filtragem (Busca + Categoria)
   const produtosFiltrados = produtos.filter(p => {
     const nomeMatch = p.nome.toLowerCase().includes(termoBusca.toLowerCase())
     const catMatch = filtroCategoria === '' || (p.categoria?.nome || 'Sem Categoria') === filtroCategoria
     return nomeMatch && catMatch
   })
 
+  // Funções de abrir modal omitidas por espaço (são iguais às originais)
   function abrirModalNovo() {
-    setProdutoSelecionado(null)
-    setModoModal('novo')
+    setProdutoSelecionado(null); setModoModal('novo');
     setForm({ nome: '', preco: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE' })
     setModalAberto(true)
   }
-
   function abrirModalEditar(produto) {
-    setProdutoSelecionado(produto)
-    setModoModal('editar')
-    setForm({
-      nome: produto.nome,
-      preco: produto.preco || '',
-      quantidade: produto.quantidadeEstoque || '',
-      categoria: produto.categoria?.nome || '',
-      novaCategoria: '',
-      tipo: produto.tipo || 'UNIDADE'
-    })
+    setProdutoSelecionado(produto); setModoModal('editar');
+    setForm({ nome: produto.nome, preco: produto.preco || '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE' })
     setModalAberto(true)
   }
-
   function abrirModalRepor(produto) {
-    setProdutoSelecionado(produto)
-    setModoModal('repor')
-    setFormRepor({ quantidade: '', precoCusto: '' })
-    setModalAberto(true)
+    setProdutoSelecionado(produto); setModoModal('repor'); setFormRepor({ quantidade: '', precoCusto: '' }); setModalAberto(true);
   }
-
   function abrirModalVender(produto) {
-    setProdutoSelecionado(produto)
-    setModoModal('vender')
-    setFormVender({ quantidade: '', precoVenda: '' })
-    setModalAberto(true)
+    setProdutoSelecionado(produto); setModoModal('vender'); setFormVender({ quantidade: '', precoVenda: '' }); setModalAberto(true);
   }
-
   function abrirModalDeletar(produto) {
-    setProdutoSelecionado(produto)
-    setModoModal('deletar')
-    setModalAberto(true)
+    setProdutoSelecionado(produto); setModoModal('deletar'); setModalAberto(true);
   }
 
+  // Funções de API (Salvar, Deletar, Repor, Vender)
   function handleSalvar() {
-    const produtoParaSalvar = {
-      id: produtoSelecionado ? produtoSelecionado.id : null,
-      nome: form.nome,
-      preco: parseFloat(form.preco),
-      quantidadeEstoque: parseInt(form.quantidade),
-      tipo: form.tipo,
-      categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria }
-    }
-
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + '/produtos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify(produtoParaSalvar)
-    })
-    .then(res => {
-      if (res.ok) {
-        setModalAberto(false)
-        carregarProdutos()
-      } else {
-        alert("Ops! Erro ao salvar o produto.")
-      }
-    })
-    .catch(err => console.log(err))
+    const obj = { id: produtoSelecionado?.id || null, nome: form.nome, preco: parseFloat(form.preco), quantidadeEstoque: parseInt(form.quantidade), tipo: form.tipo, categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria } }
+    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + '/produtos', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(obj) })
+    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao salvar."); })
   }
-
   function handleDeletar() {
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + `/produtos/${produtoSelecionado.id}`, {
-      method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    .then(res => {
-      if (res.ok) {
-        setModalAberto(false)
-        carregarProdutos()
-      } else {
-        alert("Erro ao deletar produto. Pode haver transações vinculadas a ele.")
-      }
-    })
-    .catch(err => console.log(err))
+    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + `/produtos/${produtoSelecionado.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
+    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao deletar."); })
   }
-
   function handleRepor() {
-    const qtd = parseInt(formRepor.quantidade)
-    const custo = parseFloat(formRepor.precoCusto)
-    if (!qtd || !custo || qtd <= 0 || custo <= 0) return alert("Preencha quantidade e preço de custo corretamente.")
-
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + `/produtos/${produtoSelecionado.id}/compra-com-custo`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ quantidade: qtd, precoCompra: custo, usuarioId: usuarioId || 1 })
-    })
-    .then(res => {
-      if (res.ok) {
-        setModalAberto(false)
-        carregarProdutos()
-      } else alert("Erro ao repor estoque.")
-    })
-    .catch(err => console.log(err))
+    const qtd = parseInt(formRepor.quantidade); const custo = parseFloat(formRepor.precoCusto);
+    if (!qtd || !custo) return alert("Preencha corretamente.")
+    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, precoCompra: custo, usuarioId: usuarioId || 1 }) })
+    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao repor."); })
   }
-
   function handleVender() {
-    const qtd = parseInt(formVender.quantidade)
-    const preco = parseFloat(formVender.precoVenda)
-    if (!qtd || !preco || qtd <= 0 || preco <= 0) return alert("Preencha quantidade e preço de venda corretamente.")
-
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ quantidade: qtd, precoVenda: preco, usuarioId: usuarioId || 1 })
-    })
-    .then(res => {
-      if (res.ok) {
-        setModalAberto(false)
-        carregarProdutos()
-      } else alert("❌ Erro ao vender produto.")
-    })
-    .catch(err => alert("❌ Erro ao vender produto."))
+    const qtd = parseInt(formVender.quantidade); const preco = parseFloat(formVender.precoVenda);
+    if (!qtd || !preco) return alert("Preencha corretamente.")
+    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, precoVenda: preco, usuarioId: usuarioId || 1 }) })
+    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao vender."); })
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
       
-      {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-current pb-4 opacity-90">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Gerenciar Estoque</h1>
-          <p className="text-slate-500 mt-1">Visão geral do inventário e controle de itens.</p>
+          <h1 className="text-2xl font-bold tracking-widest uppercase">Gestão</h1>
+          <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">Controle de Inventário</p>
         </div>
-        
-        <button 
-          onClick={abrirModalNovo} 
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm hover:bg-blue-700 hover:shadow transition-all"
-        >
-          <Plus size={18} /> Novo Produto
+        <button onClick={abrirModalNovo} className="border border-current bg-current/5 hover:bg-current hover:text-[var(--bg-color)] transition-all px-6 py-2.5 rounded-sm font-bold text-xs tracking-widest uppercase flex items-center gap-2">
+          <Plus size={14} /> Registro
         </button>
-      </div>
+      </header>
 
-      {/* Barra de Busca e Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
           <input 
-            placeholder="Buscar produto por nome..." 
+            placeholder="Buscar..." 
             value={termoBusca} 
             onChange={e => setTermoBusca(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-700 shadow-sm"
+            className="w-full pl-12 pr-4 py-3 bg-transparent border border-current/20 rounded-sm focus:outline-none focus:border-current text-sm tracking-widest font-bold uppercase transition-all placeholder:opacity-30"
           />
         </div>
         <div className="relative w-full sm:w-64">
-          <Filter size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Filter size={16} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
           <select 
             value={filtroCategoria} 
             onChange={e => setFiltroCategoria(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-700 shadow-sm appearance-none cursor-pointer"
+            className="w-full pl-12 pr-4 py-3 bg-transparent border border-current/20 rounded-sm focus:outline-none focus:border-current text-sm tracking-widest font-bold uppercase appearance-none cursor-pointer [&>option]:bg-[var(--bg-color)]"
           >
-            <option value="">Todas as Categorias</option>
-            {categoriasExistentes.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-            <option value="Sem Categoria">Sem Categoria</option>
+            <option value="">Todas</option>
+            {categoriasExistentes.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            <option value="Sem Categoria">S/ Categoria</option>
           </select>
         </div>
       </div>
 
-      {/* Tabela de Produtos */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="glass-panel overflow-hidden">
         {carregando ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-4">
-            <PackageSearch size={32} className="animate-pulse text-blue-500" />
-            <p className="font-medium">Carregando inventário...</p>
+          <div className="flex flex-col items-center justify-center py-20 opacity-40 space-y-4">
+            <PackageSearch size={32} className="animate-pulse" />
+            <p className="font-mono text-[10px] uppercase tracking-widest">Lendo Banco de Dados...</p>
           </div>
         ) : produtosFiltrados.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
-            <Layers size={48} className="text-slate-300 mb-4" />
-            <p className="text-lg font-semibold">Nenhum produto encontrado</p>
-            <p className="text-sm">Tente limpar os filtros ou busque por outro nome.</p>
+          <div className="flex flex-col items-center justify-center py-20 opacity-40">
+            <Layers size={32} className="mb-4 opacity-50" />
+            <p className="font-mono text-[10px] uppercase tracking-widest">Inventário Vazio</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider font-semibold">
+                <tr className="bg-current/5 border-b border-current/10 opacity-70 text-[9px] uppercase tracking-widest font-bold">
                   <th className="px-6 py-4">Produto</th>
                   <th className="px-6 py-4">Categoria</th>
-                  <th className="px-6 py-4">Preço (Venda)</th>
-                  <th className="px-6 py-4">Estoque</th>
-                  <th className="px-6 py-4 text-right">Ações</th>
+                  <th className="px-6 py-4">Varejo</th>
+                  <th className="px-6 py-4">Volume</th>
+                  <th className="px-6 py-4 text-right">Ação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-current/5">
                 {produtosFiltrados.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                    
+                  <tr key={p.id} className="hover:bg-current/5 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-800">{p.nome}</div>
-                      <div className="text-xs text-slate-400 mt-0.5 uppercase">{p.tipo}</div>
+                      <div className="font-bold text-xs uppercase tracking-wider opacity-90">{p.nome}</div>
+                      <div className="text-[9px] font-mono opacity-50 mt-1 uppercase tracking-widest">{p.tipo}</div>
                     </td>
-
                     <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
-                        <Tag size={12} />
-                        {p.categoria?.nome || 'Sem Categoria'}
+                      <span className="inline-flex items-center gap-2 px-2 py-1 border border-current/20 rounded-sm text-[9px] font-bold uppercase tracking-widest opacity-70">
+                        <Tag size={10} /> {p.categoria?.nome || 'S/ CAT'}
                       </span>
                     </td>
-
                     <td className="px-6 py-4">
-                      <div className="font-medium text-slate-700">R$ {p.preco?.toFixed(2)}</div>
+                      <div className="font-mono text-sm opacity-90">R$ {p.preco?.toFixed(2)}</div>
                     </td>
-
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                        p.quantidadeEstoque <= 5 
-                          ? 'bg-red-100 text-red-700 border border-red-200' 
-                          : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      <span className={`inline-flex px-2 py-1 border rounded-sm text-[10px] font-bold uppercase tracking-widest ${
+                        p.quantidadeEstoque <= 5 ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
                       }`}>
-                        {p.quantidadeEstoque} {p.quantidadeEstoque === 1 ? 'un' : 'un'}
+                        {p.quantidadeEstoque} UN
                       </span>
                     </td>
-
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => abrirModalVender(p)} title="Vender Produto" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200 cursor-pointer">
-                          <ShoppingCart size={18} />
-                        </button>
-                        <button onClick={() => abrirModalRepor(p)} title="Repor Estoque" className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-200 cursor-pointer">
-                          <TrendingUp size={18} />
-                        </button>
-                        <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                        <button onClick={() => abrirModalEditar(p)} title="Editar Produto" className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
-                          <Edit size={18} />
-                        </button>
-                        <button onClick={() => abrirModalDeletar(p)} title="Excluir Produto" className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
-                          <Trash2 size={18} />
-                        </button>
+                        <button onClick={() => abrirModalVender(p)} className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all"><ShoppingCart size={14} /></button>
+                        <button onClick={() => abrirModalRepor(p)} className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all"><TrendingUp size={14} /></button>
+                        <button onClick={() => abrirModalEditar(p)} className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all opacity-60"><Edit size={14} /></button>
+                        <button onClick={() => abrirModalDeletar(p)} className="p-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -310,21 +188,21 @@ function Gerenciar({ token }) {
         )}
       </div>
 
-      {/* MODAL GLOBAL */}
+      {/* MODAL CAMALEÃO */}
       {modalAberto && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="glass-panel !bg-[var(--bg-color)] w-full max-w-md rounded-sm overflow-hidden animate-in zoom-in-95 duration-200">
             
-            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">
-                {modoModal === 'novo' && 'Criar Novo Produto'}
-                {modoModal === 'editar' && 'Editar Produto'}
-                {modoModal === 'repor' && 'Repor Estoque'}
-                {modoModal === 'vender' && 'Vender Produto'}
-                {modoModal === 'deletar' && 'Confirmar Exclusão'}
+            <div className="flex justify-between items-center p-6 border-b border-current/10 opacity-90">
+              <h2 className="text-xs font-bold uppercase tracking-widest">
+                {modoModal === 'novo' && 'Novo Registro'}
+                {modoModal === 'editar' && 'Ajuste de Ativo'}
+                {modoModal === 'repor' && 'Entrada de Estoque'}
+                {modoModal === 'vender' && 'Saída / Venda'}
+                {modoModal === 'deletar' && 'Purga de Dados'}
               </h2>
-              <button onClick={() => setModalAberto(false)} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-                <X size={20} />
+              <button onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors">
+                <X size={18} />
               </button>
             </div>
 
@@ -332,42 +210,33 @@ function Gerenciar({ token }) {
               {(modoModal === 'novo' || modoModal === 'editar') && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">Nome do Produto</label>
-                    <input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Identificação</label>
+                    <input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all text-sm font-bold uppercase tracking-wider" />
                   </div>
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-semibold text-slate-600 mb-1.5">Preço (R$)</label>
-                      <input value={form.preco} onChange={e => setForm({...form, preco: e.target.value})} type="number" step="0.01" className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Varejo (R$)</label>
+                      <input value={form.preco} onChange={e => setForm({...form, preco: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-semibold text-slate-600 mb-1.5">Estoque</label>
-                      <input value={form.quantidade} onChange={e => setForm({...form, quantidade: e.target.value})} type="number" className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Volume Total</label>
+                      <input value={form.quantidade} onChange={e => setForm({...form, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
                     </div>
                   </div>
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-semibold text-slate-600 mb-1.5">Categoria</label>
-                      <select value={form.categoria} onChange={e => setForm({...form, categoria: e.target.value})} className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer">
-                        <option value="" disabled>Selecione...</option>
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Setor</label>
+                      <select value={form.categoria} onChange={e => setForm({...form, categoria: e.target.value})} className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all text-xs font-bold uppercase tracking-widest [&>option]:bg-[var(--bg-color)]">
+                        <option value="" disabled>---</option>
                         {categoriasExistentes.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        <option value="nova_categoria">➕ Nova Categoria...</option>
-                      </select>
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-sm font-semibold text-slate-600 mb-1.5">Tipo</label>
-                      <select value={form.tipo} onChange={e => setForm({...form, tipo: e.target.value})} className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer">
-                        <option value="UNIDADE">Unidade (un)</option>
-                        <option value="KG">Quilo (kg)</option>
-                        <option value="CAIXA">Caixa (cx)</option>
-                        <option value="LITRO">Litro (L)</option>
+                        <option value="nova_categoria">+ Criar Setor</option>
                       </select>
                     </div>
                   </div>
                   {form.categoria === 'nova_categoria' && (
-                    <div className="animate-in slide-in-from-top-2">
-                      <label className="block text-sm font-semibold text-blue-600 mb-1.5">Nome da Nova Categoria</label>
-                      <input value={form.novaCategoria} onChange={e => setForm({...form, novaCategoria: e.target.value})} className="w-full p-2.5 rounded-lg border border-blue-300 bg-blue-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all" />
+                    <div className="animate-in slide-in-from-top-2 border border-current/20 p-3 rounded-sm bg-current/5">
+                      <label className="block text-[9px] font-bold opacity-80 uppercase tracking-widest mb-2">Nome do Novo Setor</label>
+                      <input value={form.novaCategoria} onChange={e => setForm({...form, novaCategoria: e.target.value})} className="w-full p-2.5 bg-transparent border-b border-current/30 focus:outline-none focus:border-current transition-all text-xs font-bold uppercase tracking-widest" />
                     </div>
                   )}
                 </div>
@@ -375,68 +244,70 @@ function Gerenciar({ token }) {
 
               {modoModal === 'repor' && (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-500">Produto: <strong className="text-slate-800">{produtoSelecionado?.nome}</strong></p>
+                  <p className="text-[10px] font-mono opacity-60 uppercase tracking-widest">Alvo: <strong className="opacity-100">{produtoSelecionado?.nome}</strong></p>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">Quantidade a Repor</label>
-                    <input value={formRepor.quantidade} onChange={e => setFormRepor({...formRepor, quantidade: e.target.value})} type="number" className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Carga (UN)</label>
+                    <input value={formRepor.quantidade} onChange={e => setFormRepor({...formRepor, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">Preço de Custo (R$)</label>
-                    <input value={formRepor.precoCusto} onChange={e => setFormRepor({...formRepor, precoCusto: e.target.value})} type="number" step="0.01" className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Custo Base (R$)</label>
+                    <input value={formRepor.precoCusto} onChange={e => setFormRepor({...formRepor, precoCusto: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>
                 </div>
               )}
 
               {modoModal === 'vender' && (
                 <div className="space-y-4">
-                  <p className="text-sm text-slate-500">Produto: <strong className="text-slate-800">{produtoSelecionado?.nome}</strong></p>
-                  <p className="text-sm text-slate-500">Estoque atual: <strong className="text-blue-600">{produtoSelecionado?.quantidadeEstoque}</strong></p>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">Quantidade a Vender</label>
-                    <input value={formVender.quantidade} onChange={e => setFormVender({...formVender, quantidade: e.target.value})} type="number" className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+                  <div className="flex justify-between items-center opacity-70 text-[10px] font-mono uppercase tracking-widest border-b border-current/10 pb-3">
+                    <span>{produtoSelecionado?.nome}</span>
+                    <span>QTD Disp: {produtoSelecionado?.quantidadeEstoque}</span>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-slate-600 mb-1.5">Preço de Venda (R$)</label>
-                    <input value={formVender.precoVenda} onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} type="number" step="0.01" className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" />
+                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Baixa (UN)</label>
+                    <input value={formVender.quantidade} onChange={e => setFormVender({...formVender, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Valor de Saída (R$)</label>
+                    <input value={formVender.precoVenda} onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>
                 </div>
               )}
 
               {modoModal === 'deletar' && (
-                <div>
-                  <p className="text-slate-600 leading-relaxed">
-                    Tem certeza absoluta que deseja excluir <strong>{produtoSelecionado?.nome}</strong>? Esta ação é irreversível.
+                <div className="p-4 border border-rose-500/30 bg-rose-500/5 rounded-sm">
+                  <p className="text-xs font-mono opacity-80 uppercase tracking-widest leading-relaxed">
+                    Exclusão permanente de ativo: <br/><strong className="text-rose-500">{produtoSelecionado?.nome}</strong>. <br/>Não há retorno.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-              <button onClick={() => setModalAberto(false)} className="px-4 py-2 rounded-lg font-semibold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">
-                Cancelar
+            <div className="p-5 border-t border-current/10 bg-current/5 flex justify-end gap-3">
+              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest opacity-50 hover:opacity-100 transition-colors">
+                Abortar
               </button>
               
               {modoModal === 'deletar' && (
-                <button onClick={handleDeletar} className="px-4 py-2 rounded-lg font-semibold bg-red-600 text-white hover:bg-red-700 shadow-sm transition-colors cursor-pointer">
-                  Confirmar Exclusão
+                <button onClick={handleDeletar} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors">
+                  Purgar
                 </button>
               )}
 
               {modoModal === 'repor' && (
-                <button onClick={handleRepor} className="px-4 py-2 rounded-lg font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors cursor-pointer">
-                  Confirmar Reposição
+                <button onClick={handleRepor} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors">
+                  Executar Entrada
                 </button>
               )}
 
               {modoModal === 'vender' && (
-                <button onClick={handleVender} className="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors cursor-pointer">
-                  Confirmar Venda
+                <button onClick={handleVender} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors">
+                  Executar Saída
                 </button>
               )}
 
               {(modoModal === 'novo' || modoModal === 'editar') && (
-                <button onClick={handleSalvar} className="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors cursor-pointer">
-                  Salvar Produto
+                <button onClick={handleSalvar} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors">
+                  Gravar Dados
                 </button>
               )}
             </div>

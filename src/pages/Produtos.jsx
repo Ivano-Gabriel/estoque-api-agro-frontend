@@ -5,11 +5,9 @@ function Produtos({ token }) {
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
   
-  // Filtros
   const [busca, setBusca] = useState('')
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('Todas')
   
-  // Controle do Modal de Venda
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [modalAberto, setModalAberto] = useState(false)
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', gerarNota: false })
@@ -65,7 +63,6 @@ function Produtos({ token }) {
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
     
-    // Aqui no futuro podemos tratar o formVender.gerarNota para chamar a API de PDF
     fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -85,21 +82,23 @@ function Produtos({ token }) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
       
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Frente de Caixa</h1>
-        <p className="text-slate-500 mt-1">Busque o item ou selecione a categoria para registrar a venda rápida.</p>
-      </div>
+      <header className="flex justify-between items-end border-b border-current pb-4 opacity-90">
+        <div>
+          <h1 className="text-2xl font-bold tracking-widest uppercase">Frente de Caixa</h1>
+          <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">Venda Rápida • Catálogo</p>
+        </div>
+      </header>
 
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+      <div className="glass-panel p-6 space-y-6">
         <div className="relative">
-          <Search size={22} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={22} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
           <input
             placeholder="Buscar produto por nome..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-lg text-slate-800 font-medium transition-all"
+            className="w-full pl-12 pr-4 py-3.5 bg-transparent border border-current/20 rounded-sm focus:outline-none focus:border-current text-lg font-bold tracking-wider transition-all placeholder:opacity-30"
             autoFocus
           />
         </div>
@@ -109,10 +108,10 @@ function Produtos({ token }) {
             <button
               key={cat}
               onClick={() => setCategoriaSelecionada(cat)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-colors cursor-pointer border ${
+              className={`flex-shrink-0 px-5 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all border ${
                 categoriaSelecionada === cat 
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                  ? 'bg-current text-[var(--bg-color)] border-current shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
+                  : 'bg-transparent opacity-60 border-current/20 hover:opacity-100 hover:border-current/50'
               }`}
             >
               {cat === 'Todas' ? 'Tudo' : cat}
@@ -122,14 +121,14 @@ function Produtos({ token }) {
       </div>
 
       {carregando ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-4">
-          <PackageSearch size={32} className="animate-pulse text-blue-500" />
-          <p className="font-medium">Carregando prateleiras...</p>
+        <div className="flex flex-col items-center justify-center py-20 opacity-40 space-y-4">
+          <PackageSearch size={32} className="animate-pulse" />
+          <p className="font-mono text-xs uppercase tracking-widest">Carregando prateleiras...</p>
         </div>
       ) : produtosFiltrados.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-500 bg-white rounded-xl border border-slate-200 border-dashed">
-          <Tag size={48} className="text-slate-300 mb-4" />
-          <p className="text-lg font-semibold">Nenhum produto encontrado</p>
+        <div className="flex flex-col items-center justify-center py-20 opacity-50 glass-panel border-dashed">
+          <Tag size={48} className="mb-4 opacity-30" />
+          <p className="text-sm font-bold uppercase tracking-widest">Nenhum produto encontrado</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -137,29 +136,29 @@ function Produtos({ token }) {
             <div 
               key={p.id} 
               onClick={() => abrirModalVender(p)}
-              className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col h-full hover:shadow-lg hover:border-blue-400 transition-all cursor-pointer group relative overflow-hidden"
+              className="glass-panel p-5 flex flex-col h-full hover:border-current/50 transition-all cursor-pointer group relative overflow-hidden"
             >
-              <div className="flex justify-between items-start mb-3">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="flex justify-between items-start mb-4">
+                <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
                   {p.categoria?.nome || 'Sem Categoria'}
                 </span>
-                <span className={`text-xs font-bold px-2 py-1 rounded-md ${p.quantidadeEstoque <= 5 ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-widest ${p.quantidadeEstoque <= 5 ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-current/10 opacity-70 border border-current/20'}`}>
                   {p.quantidadeEstoque} {p.tipo}
                 </span>
               </div>
 
-              <h3 className="font-bold text-slate-800 text-lg leading-tight mb-6 flex-1 group-hover:text-blue-600 transition-colors">
+              <h3 className="font-bold text-lg leading-tight mb-6 flex-1 group-hover:opacity-70 transition-opacity uppercase tracking-wider">
                 {p.nome}
               </h3>
 
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between mt-auto pt-4 border-t border-current/10">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase">Preço Un.</span>
-                  <span className="font-bold text-emerald-600 text-xl">R$ {p.preco?.toFixed(2)}</span>
+                  <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">Preço Un.</span>
+                  <span className="font-mono font-light text-xl opacity-90">R$ {p.preco?.toFixed(2)}</span>
                 </div>
                 
-                <div className="bg-blue-50 text-blue-600 p-2.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  <ShoppingCart size={20} />
+                <div className="border border-current/20 p-2.5 rounded-sm group-hover:bg-current group-hover:text-[var(--bg-color)] transition-colors">
+                  <ShoppingCart size={18} />
                 </div>
               </div>
             </div>
@@ -167,69 +166,67 @@ function Produtos({ token }) {
         </div>
       )}
 
-      {/* Modal Limpo de Venda */}
+      {/* Modal de Venda */}
       {modalAberto && (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="glass-panel !bg-[var(--bg-color)] w-full max-w-md rounded-sm overflow-hidden animate-in zoom-in-95 duration-200">
             
-            <div className="flex justify-between items-center p-6 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-800">Registrar Venda</h2>
-              <button onClick={() => setModalAberto(false)} className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+            <div className="flex justify-between items-center p-6 border-b border-current/10 opacity-90">
+              <h2 className="text-sm font-bold uppercase tracking-widest">Registrar Venda</h2>
+              <button onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-slate-500">Produto: <strong className="text-slate-800">{produtoSelecionado?.nome}</strong></p>
-              <p className="text-sm text-slate-500">Estoque atual: <strong className="text-blue-600">{produtoSelecionado?.quantidadeEstoque}</strong></p>
+            <div className="p-6 space-y-5">
+              <div className="flex justify-between items-center opacity-70 text-xs font-mono uppercase tracking-widest">
+                <span>{produtoSelecionado?.nome}</span>
+                <span>Estoque: {produtoSelecionado?.quantidadeEstoque}</span>
+              </div>
               
               <div>
-                <label className="block text-sm font-semibold text-slate-600 mb-1.5">Quantidade a Vender</label>
+                <label className="block text-[10px] font-bold opacity-50 uppercase tracking-widest mb-2">Quantidade a Vender</label>
                 <input 
                   value={formVender.quantidade} 
                   onChange={e => setFormVender({...formVender, quantidade: e.target.value})} 
                   type="number" 
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" 
+                  className="w-full p-3 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono text-lg transition-all" 
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-slate-600 mb-1.5">Preço de Venda Unitário (R$)</label>
+                <label className="block text-[10px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço Unitário (R$)</label>
                 <input 
                   value={formVender.precoVenda} 
                   onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} 
                   type="number" step="0.01" 
-                  className="w-full p-2.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white" 
+                  className="w-full p-3 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono text-lg transition-all" 
                 />
               </div>
 
-              {/* Checkbox de Gerar Nota */}
               <div className="pt-2">
-                <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                <label className="flex items-center gap-4 p-4 border border-current/20 rounded-sm cursor-pointer hover:bg-current/5 transition-colors">
                   <input 
                     type="checkbox" 
                     checked={formVender.gerarNota}
                     onChange={e => setFormVender({...formVender, gerarNota: e.target.checked})}
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                    className="w-5 h-5 accent-current cursor-pointer"
                   />
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                      <FileText size={16} className="text-slate-400" />
-                      Emitir Comprovante / Nota
+                    <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 opacity-90">
+                      <FileText size={14} className="opacity-50" /> Emitir Recibo
                     </span>
-                    <span className="text-xs text-slate-500">Gera um recibo para esta transação</span>
                   </div>
                 </label>
               </div>
             </div>
 
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-2xl">
-              <button onClick={() => setModalAberto(false)} className="px-4 py-2 rounded-lg font-semibold text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer">
+            <div className="p-6 border-t border-current/10 bg-current/5 flex justify-end gap-3">
+              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors">
                 Cancelar
               </button>
-              <button onClick={handleVender} className="px-4 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-colors cursor-pointer flex items-center gap-2">
-                <ShoppingCart size={18} />
-                Confirmar Venda
+              <button onClick={handleVender} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors flex items-center gap-2">
+                <ShoppingCart size={14} /> Confirmar
               </button>
             </div>
             

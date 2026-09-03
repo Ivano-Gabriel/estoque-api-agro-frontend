@@ -3,19 +3,13 @@ import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRigh
 
 function Lucro({ token }) {
   const [movimentacoes, setMovimentacoes] = useState([])
-  const [fluxo, setFluxo] = useState({
-    totalEntradas: 0,
-    totalSaidas: 0,
-    saldoLiquido: 0
-  })
+  const [fluxo, setFluxo] = useState({ totalEntradas: 0, totalSaidas: 0, saldoLiquido: 0 })
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
 
-    fetch(apiUrl + '/transacoes', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
+    fetch(apiUrl + '/transacoes', { headers: { 'Authorization': `Bearer ${token}` } })
     .then(res => res.json())
     .then(data => {
       const movs = data.map(t => ({
@@ -28,9 +22,7 @@ function Lucro({ token }) {
         data: new Date(t.data).toLocaleDateString('pt-BR')
       }))
       setMovimentacoes(movs)
-      return fetch(apiUrl + '/fluxo-caixa', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      return fetch(apiUrl + '/fluxo-caixa', { headers: { 'Authorization': `Bearer ${token}` } })
     })
     .then(res => res.json())
     .then(data => {
@@ -47,126 +39,103 @@ function Lucro({ token }) {
     })
   }, [token])
 
-  const totalEntradas = fluxo.totalEntradas
-  const totalSaidas = fluxo.totalSaidas
-  const saldo = fluxo.saldoLiquido
-
+  const { totalEntradas, totalSaidas, saldoLiquido: saldo } = fluxo
   const totalMovimentado = totalEntradas + totalSaidas > 0 ? totalEntradas + totalSaidas : 1
   const percentualLucro = (totalEntradas / totalMovimentado) * 100
 
-  // Função auxiliar para formatar dinheiro no padrão BR
-  const formatarMoeda = (valor) => {
-    return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  }
+  const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
       
-      {/* Cabeçalho */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Fluxo de Caixa</h1>
-        <p className="text-slate-500 mt-1">Acompanhe a inteligência financeira do seu estoque.</p>
-      </div>
+      <header className="flex justify-between items-end border-b border-current pb-4 opacity-90">
+        <div>
+          <h1 className="text-2xl font-bold tracking-widest uppercase">Fluxo de Caixa</h1>
+          <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">Inteligência Financeira</p>
+        </div>
+      </header>
 
       {carregando ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400 space-y-4">
-          <Activity size={32} className="animate-pulse text-blue-500" />
-          <p className="font-medium">Carregando dados financeiros...</p>
+        <div className="flex flex-col items-center justify-center py-20 opacity-40 space-y-4">
+          <Activity size={32} className="animate-pulse" />
+          <p className="font-mono text-xs uppercase tracking-widest">Carregando dados financeiros...</p>
         </div>
       ) : (
         <>
-          {/* Cards de Métricas Principais */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-slate-500 text-sm font-semibold">Entradas (Vendas)</p>
-                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-                  <TrendingUp size={20} />
-                </div>
+            <div className="glass-panel p-6 flex flex-col justify-between border-l-2 border-emerald-500/50">
+              <div className="flex items-center justify-between mb-6 opacity-60">
+                <p className="text-[10px] uppercase tracking-widest font-bold">Entradas (Vendas)</p>
+                <TrendingUp size={16} />
               </div>
-              <h2 className="text-3xl font-bold text-slate-800">
-                <span className="text-lg text-slate-400 font-medium mr-1">R$</span>
-                {formatarMoeda(totalEntradas)}
+              <h2 className="text-3xl font-mono font-light tracking-tighter opacity-90">
+                <span className="text-sm opacity-50 mr-2">R$</span>{formatarMoeda(totalEntradas)}
               </h2>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-slate-500 text-sm font-semibold">Saídas (Reposição)</p>
-                <div className="p-2 bg-red-50 text-red-600 rounded-lg">
-                  <TrendingDown size={20} />
-                </div>
+            <div className="glass-panel p-6 flex flex-col justify-between border-l-2 border-rose-500/50">
+              <div className="flex items-center justify-between mb-6 opacity-60">
+                <p className="text-[10px] uppercase tracking-widest font-bold">Saídas (Reposição)</p>
+                <TrendingDown size={16} />
               </div>
-              <h2 className="text-3xl font-bold text-slate-800">
-                <span className="text-lg text-slate-400 font-medium mr-1">R$</span>
-                {formatarMoeda(totalSaidas)}
+              <h2 className="text-3xl font-mono font-light tracking-tighter opacity-90">
+                <span className="text-sm opacity-50 mr-2">R$</span>{formatarMoeda(totalSaidas)}
               </h2>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-blue-200 shadow-sm flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -z-10 opacity-50"></div>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-slate-500 text-sm font-semibold">Saldo Líquido</p>
-                <div className={`p-2 rounded-lg ${saldo >= 0 ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
-                  <Wallet size={20} />
-                </div>
+            <div className="glass-panel p-6 flex flex-col justify-between relative overflow-hidden border-l-2 border-current">
+              <div className="flex items-center justify-between mb-6 opacity-60">
+                <p className="text-[10px] uppercase tracking-widest font-bold">Saldo Líquido</p>
+                <Wallet size={16} />
               </div>
-              <h2 className={`text-3xl font-bold ${saldo >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                <span className={`text-lg font-medium mr-1 ${saldo >= 0 ? 'text-blue-400' : 'text-red-400'}`}>R$</span>
-                {formatarMoeda(saldo)}
+              <h2 className={`text-3xl font-mono font-light tracking-tighter ${saldo >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                <span className="text-sm opacity-50 mr-2">R$</span>{formatarMoeda(saldo)}
               </h2>
             </div>
 
           </div>
 
-          {/* Barra de Proporção (Receitas x Despesas) */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-emerald-600 font-bold text-sm uppercase tracking-wide">Receitas</span>
-              <span className="text-red-500 font-bold text-sm uppercase tracking-wide">Despesas</span>
+          <div className="glass-panel p-6 mt-6">
+            <div className="flex justify-between items-center mb-4 opacity-70">
+              <span className="font-bold text-[10px] uppercase tracking-widest">Proporção Operacional</span>
             </div>
-            <div className="w-full h-3 bg-red-100 rounded-full overflow-hidden flex">
-              <div 
-                className="h-full bg-emerald-500 transition-all duration-1000 ease-out" 
-                style={{ width: `${Math.min(percentualLucro, 100)}%` }}
-              ></div>
+            <div className="w-full h-1 bg-rose-500/30 rounded-full overflow-hidden flex">
+              <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{ width: `${Math.min(percentualLucro, 100)}%` }}></div>
             </div>
           </div>
 
-          {/* Histórico de Transações */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-8">
-            <div className="p-6 border-b border-slate-100 flex items-center gap-2">
-              <Receipt className="text-slate-400" size={20} />
-              <h3 className="text-lg font-bold text-slate-800">Histórico de Transações</h3>
+          <div className="glass-panel overflow-hidden mt-6">
+            <div className="p-6 border-b border-current/10 flex items-center gap-3 opacity-90">
+              <Receipt size={16} className="opacity-50" />
+              <h3 className="text-xs font-bold uppercase tracking-widest">Histórico de Transações</h3>
             </div>
 
             {movimentacoes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                <Receipt size={48} className="text-slate-200 mb-4" />
-                <p className="font-semibold">Nenhuma movimentação registrada</p>
-                <p className="text-sm">Suas vendas e compras aparecerão aqui.</p>
+              <div className="flex flex-col items-center justify-center py-16 opacity-40">
+                <Receipt size={32} className="mb-4 opacity-50" />
+                <p className="font-mono text-[10px] uppercase tracking-widest">Nenhuma movimentação</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-current/10">
                 {movimentacoes.map((mov) => (
-                  <div key={mov.id} className="p-5 sm:px-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-slate-50 transition-colors">
+                  <div key={mov.id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-current/5 transition-colors">
                     
                     <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-full flex-shrink-0 ${mov.tipo === 'VENDA' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                        {mov.tipo === 'VENDA' ? <ArrowUpRight size={24} /> : <ArrowDownRight size={24} />}
+                      <div className={`p-2 rounded-sm border ${mov.tipo === 'VENDA' ? 'border-emerald-500/30 text-emerald-500' : 'border-rose-500/30 text-rose-500'}`}>
+                        {mov.tipo === 'VENDA' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                       </div>
                       <div>
-                        <span className="font-bold text-slate-800 block text-base">
+                        <span className="font-bold text-xs uppercase tracking-wider block opacity-90">
                           {mov.produto}
                         </span>
-                        <span className="text-sm text-slate-500">
-                          {mov.data} • {mov.quantidade} unidades a R$ {formatarMoeda(mov.valorUnitario)} cada
+                        <span className="text-[10px] font-mono opacity-50 tracking-widest uppercase">
+                          {mov.data} • {mov.quantidade} UN • R$ {formatarMoeda(mov.valorUnitario)}
                         </span>
                       </div>
                     </div>
                     
-                    <div className={`font-bold text-lg whitespace-nowrap ${mov.tipo === 'VENDA' ? 'text-emerald-600' : 'text-red-500'}`}>
+                    <div className={`font-mono font-light text-lg whitespace-nowrap ${mov.tipo === 'VENDA' ? 'text-emerald-500' : 'text-rose-500'}`}>
                       {mov.tipo === 'VENDA' ? '+' : '-'} R$ {formatarMoeda(mov.total)}
                     </div>
                   </div>
