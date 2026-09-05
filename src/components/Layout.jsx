@@ -22,10 +22,9 @@ function Layout({ token, onLogout }) {
 
   return (
     <>
-      {/* CAMADA BLINDADA DA IMAGEM DE FUNDO */}
+      {/* CAMADA BLINDADA QUE TROCA DE FOTO SOZINHA */}
       <div 
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/apopo.jpeg')" }}
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-dinamico transition-all duration-700"
       ></div>
 
       {/* SISTEMA (Fica por cima da imagem) */}

@@ -139,52 +139,96 @@ function Gerenciar({ token }) {
             <p className="font-mono text-[10px] uppercase tracking-widest">Inventário Vazio</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-current/5 border-b border-current/10 opacity-70 text-[9px] uppercase tracking-widest font-bold">
-                  <th className="px-6 py-4">Produto</th>
-                  <th className="px-6 py-4">Categoria</th>
-                  <th className="px-6 py-4">Varejo</th>
-                  <th className="px-6 py-4">Volume</th>
-                  <th className="px-6 py-4 text-right">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-current/5">
-                {produtosFiltrados.map(p => (
-                  <tr key={p.id} className="hover:bg-current/5 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-xs uppercase tracking-wider opacity-90">{p.nome}</div>
-                      <div className="text-[9px] font-mono opacity-50 mt-1 uppercase tracking-widest">{p.tipo}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center gap-2 px-2 py-1 border border-current/20 rounded-sm text-[9px] font-bold uppercase tracking-widest opacity-70">
-                        <Tag size={10} /> {p.categoria?.nome || 'S/ CAT'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="font-mono text-sm opacity-90">R$ {p.preco?.toFixed(2)}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 border rounded-sm text-[10px] font-bold uppercase tracking-widest ${
-                        p.quantidadeEstoque <= 5 ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
-                      }`}>
-                        {p.quantidadeEstoque} UN
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => abrirModalVender(p)} className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all"><ShoppingCart size={14} /></button>
-                        <button onClick={() => abrirModalRepor(p)} className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all"><TrendingUp size={14} /></button>
-                        <button onClick={() => abrirModalEditar(p)} className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all opacity-60"><Edit size={14} /></button>
-                        <button onClick={() => abrirModalDeletar(p)} className="p-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all"><Trash2 size={14} /></button>
-                      </div>
-                    </td>
+          <>
+            {/* VISÃO DESKTOP (TABELA) - Esconde no Celular */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-current/5 border-b border-current/10 opacity-70 text-[9px] uppercase tracking-widest font-bold">
+                    <th className="px-6 py-4">Produto</th>
+                    <th className="px-6 py-4">Categoria</th>
+                    <th className="px-6 py-4">Varejo</th>
+                    <th className="px-6 py-4">Volume</th>
+                    <th className="px-6 py-4 text-right">Ação</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-current/5">
+                  {produtosFiltrados.map(p => (
+                    <tr key={p.id} className="hover:bg-current/5 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-xs uppercase tracking-wider opacity-90">{p.nome}</div>
+                        <div className="text-[9px] font-mono opacity-50 mt-1 uppercase tracking-widest">{p.tipo}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center gap-2 px-2 py-1 border border-current/20 rounded-sm text-[9px] font-bold uppercase tracking-widest opacity-70">
+                          <Tag size={10} /> {p.categoria?.nome || 'S/ CAT'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-mono text-sm opacity-90">R$ {p.preco?.toFixed(2)}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 border rounded-sm text-[10px] font-bold uppercase tracking-widest ${
+                          p.quantidadeEstoque <= 5 ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
+                        }`}>
+                          {p.quantidadeEstoque} UN
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => abrirModalVender(p)} title="Vender" className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all cursor-pointer"><ShoppingCart size={14} /></button>
+                          <button onClick={() => abrirModalRepor(p)} title="Repor" className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all cursor-pointer"><TrendingUp size={14} /></button>
+                          <button onClick={() => abrirModalEditar(p)} title="Editar" className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all opacity-60 cursor-pointer"><Edit size={14} /></button>
+                          <button onClick={() => abrirModalDeletar(p)} title="Excluir" className="p-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all cursor-pointer"><Trash2 size={14} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* VISÃO MOBILE (CARDS) - Esconde no Computador */}
+            <div className="md:hidden grid grid-cols-1 gap-4 p-4">
+              {produtosFiltrados.map(p => (
+                <div key={`mobile-${p.id}`} className="flex flex-col p-4 border border-current/10 bg-current/5 rounded-sm space-y-4">
+                  {/* Linha 1: Nome e Tipo */}
+                  <div className="flex justify-between items-start">
+                    <div className="font-bold text-sm uppercase tracking-wider opacity-90">{p.nome}</div>
+                    <span className={`px-2 py-1 border rounded-sm text-[9px] font-bold uppercase tracking-widest whitespace-nowrap ${
+                      p.quantidadeEstoque <= 5 ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
+                    }`}>
+                      {p.quantidadeEstoque} UN
+                    </span>
+                  </div>
+                  
+                  {/* Linha 2: Categoria e Preço */}
+                  <div className="flex justify-between items-end border-b border-current/10 pb-4">
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest opacity-60">
+                      <Tag size={10} /> {p.categoria?.nome || 'S/ CAT'}
+                    </span>
+                    <div className="font-mono text-base font-light opacity-90">R$ {p.preco?.toFixed(2)}</div>
+                  </div>
+
+                  {/* Linha 3: Botões de Ação Grandes e Fáceis de Clicar com o dedo */}
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => abrirModalVender(p)} className="flex-1 flex justify-center p-3 border border-current/20 hover:bg-current/10 rounded-sm transition-all cursor-pointer">
+                      <ShoppingCart size={16} />
+                    </button>
+                    <button onClick={() => abrirModalRepor(p)} className="flex-1 flex justify-center p-3 border border-current/20 hover:bg-current/10 rounded-sm transition-all cursor-pointer">
+                      <TrendingUp size={16} />
+                    </button>
+                    <button onClick={() => abrirModalEditar(p)} className="flex-1 flex justify-center p-3 border border-current/20 hover:bg-current/10 rounded-sm transition-all opacity-60 cursor-pointer">
+                      <Edit size={16} />
+                    </button>
+                    <button onClick={() => abrirModalDeletar(p)} className="flex-1 flex justify-center p-3 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all cursor-pointer">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

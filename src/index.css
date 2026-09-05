@@ -1,20 +1,22 @@
 @import "tailwindcss";
 
-/* MODO CLARO - Texto Preto Puro */
+/* MODO CLARO - Laboratório (Fundo Branco Limpo sem Fantasma) */
 :root {
   --bg-color: #f8fafc;
   --text-color: #000000;
-  --bg-image: url('/branco.jpeg'); /* Sua foto clara aqui */
+  /* O gradiente 92% branco por cima da foto mata o vazamento fantasma */
+  --bg-image: linear-gradient(rgba(255,255,255,0.92), rgba(255,255,255,0.92)), url('/branco.jpeg'); 
   --glass-bg: rgba(255, 255, 255, 0.75); 
   --glass-border: rgba(0, 0, 0, 0.15);
   --glass-line: rgba(0, 0, 0, 0.8); 
   --glass-shadow: rgba(0, 0, 0, 0.05);
 }
 
-/* MODO ESCURO - Texto Branco Puro */
+/* MODO ESCURO - Stealth (Batcaverna) */
 .dark {
   --bg-color: #050505;
-  --text-color: #ffffff; /* BRANCO PURO */
+  --text-color: #ffffff; 
+  --bg-image: url('/apopo.jpeg'); /* Imagem escura pura */
   --glass-bg: rgba(10, 10, 12, 0.6); 
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-line: rgba(255, 255, 255, 0.5); 
@@ -25,7 +27,7 @@ body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
-  background-image: var(--bg-image); /* O CSS troca a imagem sozinho agora */
+  background-image: var(--bg-image);
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -56,8 +58,10 @@ body {
 
 /* O Fundo Blindado que troca sozinho */
 .bg-dinamico { 
-  background-image: url('/branco.jpeg'); 
+  /* Fundo claro com película para o texto preto brilhar */
+  background-image: linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)), url('/branco.jpeg'); 
 }
 .dark .bg-dinamico { 
-  background-image: url('/apopo.jpeg'); /* Confirme se a sua foto escura chama apopo.jpeg mesmo */
+  /* Fundo escuro para o texto branco brilhar */
+  background-image: url('/apopo.jpeg'); 
 }
