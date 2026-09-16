@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, Layers, Search, Filter } from 'lucide-react'
+import API_URL from '../config/api'
 
 function Gerenciar({ token }) {
   const [produtos, setProdutos] = useState([])
@@ -15,28 +16,17 @@ function Gerenciar({ token }) {
   const [form, setForm] = useState({ nome: '', preco: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
-  const [usuarioId, setUsuarioId] = useState(null)
 
-  useEffect(() => {
-    const userData = localStorage.getItem('userData')
-    if (userData) {
-      try { setUsuarioId(JSON.parse(userData).id); return; } 
-      catch (e) { console.log('Erro parse') }
-    }
-    setUsuarioId(1)
-  }, [])
-
-  const carregarProdutos = () => {
+  const carregarProdutos = useCallback(() => {
     setCarregando(true)
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + '/produtos', { headers: { 'Authorization': `Bearer ${token}` } })
+    fetch(API_URL + '/produtos', { headers: { 'Authorization': `Bearer ${token}` } })
     .then(res => res.ok ? res.json() : [])
     .then(data => setProdutos(data))
     .catch(err => console.log(err))
     .finally(() => setCarregando(false))
-  }
+  }, [token])
 
-  useEffect(() => { carregarProdutos() }, [token])
+  useEffect(() => { carregarProdutos() }, [carregarProdutos])
 
   const categoriasExistentes = [...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean))]
 
@@ -69,24 +59,26 @@ function Gerenciar({ token }) {
 
   // Funções de API (Salvar, Deletar, Repor, Vender)
   function handleSalvar() {
-    const obj = { id: produtoSelecionado?.id || null, nome: form.nome, preco: parseFloat(form.preco), quantidadeEstoque: parseInt(form.quantidade), tipo: form.tipo, categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria } }
-    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + '/produtos', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(obj) })
+    const obj = { nome: form.nome, preco: parseFloat(form.preco), quantidadeEstoque: parseInt(form.quantidade), tipo: form.tipo, categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria } }
+    const editando = Boolean(produtoSelecionado?.id)
+    const url = editando ? `${API_URL}/produtos/${produtoSelecionado.id}` : `${API_URL}/produtos`
+    fetch(url, { method: editando ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(obj) })
     .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao salvar."); })
   }
   function handleDeletar() {
-    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + `/produtos/${produtoSelecionado.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
+    fetch(API_URL + `/produtos/${produtoSelecionado.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
     .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao deletar."); })
   }
   function handleRepor() {
     const qtd = parseInt(formRepor.quantidade); const custo = parseFloat(formRepor.precoCusto);
     if (!qtd || !custo) return alert("Preencha corretamente.")
-    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, precoCompra: custo, usuarioId: usuarioId || 1 }) })
+    fetch(API_URL + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, preco: custo }) })
     .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao repor."); })
   }
   function handleVender() {
     const qtd = parseInt(formVender.quantidade); const preco = parseFloat(formVender.precoVenda);
     if (!qtd || !preco) return alert("Preencha corretamente.")
-    fetch((import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com') + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, precoVenda: preco, usuarioId: usuarioId || 1 }) })
+    fetch(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, preco }) })
     .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao vender."); })
   }
 

@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, ShoppingCart, PackageSearch, Tag, X, FileText } from 'lucide-react'
+import API_URL from '../config/api'
 
 function Produtos({ token }) {
   const [produtos, setProdutos] = useState([])
@@ -11,31 +12,19 @@ function Produtos({ token }) {
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [modalAberto, setModalAberto] = useState(false)
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', gerarNota: false })
-  const [usuarioId, setUsuarioId] = useState(null)
 
-  useEffect(() => {
-    const userData = localStorage.getItem('userData')
-    if (userData) {
-      try {
-        setUsuarioId(JSON.parse(userData).id)
-        return
-      } catch (e) { console.log('Erro ao parsear userData') }
-    }
-    setUsuarioId(1)
-  }, [])
-
-  function recarregarProdutos() {
+  const recarregarProdutos = useCallback(() => {
     setCarregando(true)
-    fetch(import.meta.env.VITE_API_URL + '/produtos', {
+    fetch(API_URL + '/produtos', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => res.ok ? res.json() : [])
     .then(data => setProdutos(data))
     .catch(err => console.log(err))
     .finally(() => setCarregando(false))
-  }
+  }, [token])
   
-  useEffect(() => { recarregarProdutos() }, [token])
+  useEffect(() => { recarregarProdutos() }, [recarregarProdutos])
 
   const categorias = ['Todas', ...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean)), 'Sem Categoria']
 
@@ -61,12 +50,10 @@ function Produtos({ token }) {
       return
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    
-    fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
+    fetch(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ quantidade: qtd, precoVenda: preco, usuarioId: usuarioId || 1 })
+      body: JSON.stringify({ quantidade: qtd, preco })
     })
     .then(res => {
       if (res.ok) {

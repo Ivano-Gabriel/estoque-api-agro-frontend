@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import API_URL from '../config/api'
+
 function FormProduto({ token, onProdutoAdicionado, onFechar }) {
   const [nome, setNome] = useState('')
   const [tipo, setTipo] = useState('')
@@ -8,7 +10,7 @@ function FormProduto({ token, onProdutoAdicionado, onFechar }) {
   const [categoria, setCategoria] = useState('')
 
   async function handleSalvar() {
-    await fetch('https://estoque-api-agro.onrender.com/produtos', {
+    await fetch(API_URL + '/produtos', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

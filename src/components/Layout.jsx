@@ -2,17 +2,17 @@ import { Outlet, Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool } from 'lucide-react'
 import { useState } from 'react'
 
-function Layout({ token, onLogout }) {
+function Layout({ role, onLogout }) {
   const location = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
 
   const navItems = [
-    { name: 'Hub', path: '/', icon: LayoutDashboard },
+    { name: 'Hub', path: '/', icon: LayoutDashboard, adminOnly: true },
     { name: 'Catálogo', path: '/produtos', icon: PackageSearch },
     { name: 'Gerenciar', path: '/gerenciar', icon: PenTool },
-    { name: 'Caixa', path: '/lucro', icon: DollarSign },
+    { name: 'Caixa', path: '/lucro', icon: DollarSign, adminOnly: true },
     { name: 'Ajustes', path: '/config', icon: Settings },
-  ]
+  ].filter(item => !item.adminOnly || role === 'ADMIN')
 
   const LogoI = () => (
     <div className="flex items-center justify-center w-7 h-7 border border-current bg-current/5 font-extrabold text-sm tracking-tighter">

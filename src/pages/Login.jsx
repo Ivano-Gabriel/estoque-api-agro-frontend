@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import API_URL from '../config/api'
 
 function Login({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -11,26 +12,19 @@ function Login({ onLogin }) {
     setCarregando(true)
     setErro('')
 
-    fetch(import.meta.env.VITE_API_URL + '/auth/login', {
+    fetch(API_URL + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, senha })
     })
     .then(res => {
       if (res.ok) {
-        return res.text() // ← VOLTA A SER TEXTO!
+        return res.json()
       }
       throw new Error('E-mail ou senha incorretos.')
     })
-    .then(token => {
-      // 🔥 SALVA O USUÁRIO COM ID 1 (já que o backend não manda)
-      localStorage.setItem('userData', JSON.stringify({
-        id: 1,
-        email: email
-      }))
-      
-      // Chama a função do App com o token
-      onLogin(token)
+    .then(sessao => {
+      onLogin(sessao)
     })
     .catch(err => {
       setErro(err.message)

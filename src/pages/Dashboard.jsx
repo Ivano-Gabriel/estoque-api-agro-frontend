@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_URL from '../config/api'
 import FormProduto from '../components/FormProduto'
 import Navbar from '../components/Navbar'
 import FormQuantidade from '../components/FormQuantidade'
@@ -10,7 +11,7 @@ function Dashboard({ token, onLogout }) {
   const [tipoAcao, setTipoAcao] = useState(null)
 
   useEffect(() => {
-    fetch('https://estoque-api-agro.onrender.com/produtos', {
+    fetch(API_URL + '/produtos', {
       headers: { 'Authorization': 'Bearer ' + token }
     })
       .then(res => res.json())
@@ -18,7 +19,7 @@ function Dashboard({ token, onLogout }) {
   }, [token])
 
   function recarregarProdutos() {
-    fetch('https://estoque-api-agro.onrender.com/produtos', {
+    fetch(API_URL + '/produtos', {
       headers: { 'Authorization': 'Bearer ' + token }
     })
       .then(res => res.json())
@@ -28,7 +29,7 @@ function Dashboard({ token, onLogout }) {
   
   async function deletarProduto(id) {
     if (window.confirm("Tem certeza que deseja deletar este produto?")) {
-      await fetch(`https://estoque-api-agro.onrender.com/produtos/${id}`, {
+      await fetch(`${API_URL}/produtos/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token }
       })

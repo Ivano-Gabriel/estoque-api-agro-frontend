@@ -1,28 +1,29 @@
-import { useState, useEffect } from 'react'
-import { Sun, Moon, ShieldAlert, Database, Trash2, ArchiveX, RotateCcw } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Sun, Moon, Database, ArchiveX, RotateCcw, UserPlus } from 'lucide-react'
+import API_URL from '../config/api'
 
-function Configuracoes({ token }) {
+function Configuracoes({ token, role }) {
   const [isDark, setIsDark] = useState(true)
   const [lixeira, setLixeira] = useState([])
+  const [novaFuncionaria, setNovaFuncionaria] = useState({ email: '', senha: '' })
+  const [salvandoUsuario, setSalvandoUsuario] = useState(false)
 
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'))
-    carregarLixeira()
-  }, [token])
-
-  const carregarLixeira = () => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + '/produtos/lixeira', {
+  const carregarLixeira = useCallback(() => {
+    fetch(API_URL + '/produtos/lixeira', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => res.ok ? res.json() : [])
     .then(data => setLixeira(data))
     .catch(err => console.log('Erro ao carregar lixeira', err))
-  }
+  }, [token])
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains('dark'))
+    carregarLixeira()
+  }, [carregarLixeira])
 
   const handleRestaurar = (id) => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    fetch(apiUrl + `/produtos/${id}/restaurar`, {
+    fetch(API_URL + `/produtos/${id}/restaurar`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` }
     })
@@ -35,27 +36,6 @@ function Configuracoes({ token }) {
       }
     })
     .catch(() => alert("Falha na conexão ao restaurar."))
-  }
-
-  // NOVA FUNÇÃO: Exclusão Permanente
-  const handleDeletarPermanente = (id) => {
-    const confirmacao = window.confirm("CUIDADO: Isso vai aniquilar o produto e o histórico dele para sempre. Continuar?");
-    if (confirmacao) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-      fetch(apiUrl + `/produtos/${id}/permanente`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-      .then(res => {
-        if (res.ok) {
-          carregarLixeira()
-          alert("Produto obliterado do banco de dados com sucesso.")
-        } else {
-          alert("Erro ao purgar produto.")
-        }
-      })
-      .catch(() => alert("Falha na conexão ao purgar."))
-    }
   }
 
   const toggleTheme = () => {
@@ -71,21 +51,30 @@ function Configuracoes({ token }) {
     }
   }
 
-  const handleResetFinanceiro = () => {
-    const confirmacao = window.confirm("ATENÇÃO: Isso apagará TODO o histórico de Vendas e Compras.\n\nTem certeza absoluta?");
-    if (confirmacao) {
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-      fetch(apiUrl + '/produtos/reset-financeiro', {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      }).then(res => {
-        if (res.ok) {
-          alert("Histórico financeiro purgado com sucesso.")
-          window.location.reload(); 
-        } else {
-          alert(`Erro do Servidor HTTP: ${res.status}`);
-        }
+  const cadastrarFuncionaria = async (event) => {
+    event.preventDefault()
+    setSalvandoUsuario(true)
+    try {
+      const response = await fetch(API_URL + '/auth/registrar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ ...novaFuncionaria, role: 'FUNCIONARIA' })
       })
+
+      if (!response.ok) {
+        const mensagem = await response.text()
+        throw new Error(mensagem || 'Não foi possível cadastrar a funcionária.')
+      }
+
+      setNovaFuncionaria({ email: '', senha: '' })
+      alert('Funcionária cadastrada com sucesso.')
+    } catch (error) {
+      alert(error.message)
+    } finally {
+      setSalvandoUsuario(false)
     }
   }
 
@@ -125,26 +114,39 @@ function Configuracoes({ token }) {
           </div>
         </div>
 
-        <div className="glass-panel !border-l-rose-600 p-6 flex flex-col gap-6">
-          <div className="flex items-center gap-3 border-b border-rose-500/30 pb-4">
-            <ShieldAlert size={16} className="text-rose-600" />
-            <h2 className="text-xs font-bold uppercase tracking-widest text-rose-600">Zona Restrita</h2>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-wider text-rose-600">Reset Financeiro</p>
-              <p className="text-[10px] uppercase tracking-widest opacity-60 mt-1 text-rose-600">Ação irreversível no banco</p>
+        {role === 'ADMIN' && (
+          <form onSubmit={cadastrarFuncionaria} className="glass-panel p-6 flex flex-col gap-4">
+            <div className="flex items-center gap-3 border-b border-current pb-4 opacity-80">
+              <UserPlus size={16} className="opacity-70" />
+              <h2 className="text-xs font-bold uppercase tracking-widest">Nova Funcionária</h2>
             </div>
-            <button 
-              onClick={handleResetFinanceiro}
-              className="flex items-center justify-center w-12 h-12 border border-rose-600 hover:bg-rose-600/10 transition-colors text-rose-600 cursor-pointer"
-              title="Apagar Histórico"
+            <input
+              type="email"
+              required
+              value={novaFuncionaria.email}
+              onChange={event => setNovaFuncionaria(atual => ({ ...atual, email: event.target.value }))}
+              placeholder="funcionaria@loja.com"
+              className="bg-transparent border border-current/20 p-3 text-sm"
+            />
+            <input
+              type="password"
+              required
+              minLength={10}
+              maxLength={72}
+              value={novaFuncionaria.senha}
+              onChange={event => setNovaFuncionaria(atual => ({ ...atual, senha: event.target.value }))}
+              placeholder="Senha com pelo menos 10 caracteres"
+              className="bg-transparent border border-current/20 p-3 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={salvandoUsuario}
+              className="border border-current px-4 py-3 text-xs font-bold uppercase tracking-widest disabled:opacity-50"
             >
-              <Trash2 size={18} />
+              {salvandoUsuario ? 'Cadastrando...' : 'Criar acesso'}
             </button>
-          </div>
-        </div>
+          </form>
+        )}
 
         <div className="glass-panel p-6 md:col-span-2">
           <div className="flex items-center gap-3 border-b border-current/20 pb-4 mb-4 opacity-90">
@@ -167,20 +169,12 @@ function Configuracoes({ token }) {
                     </p>
                   </div>
                   
-                  {/* BOTOÕES LADO A LADO */}
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleRestaurar(item.id)}
                       className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-current opacity-70 hover:opacity-100 hover:bg-current hover:text-[var(--bg-color)] transition-all font-bold text-[10px] uppercase tracking-widest cursor-pointer"
                     >
                       <RotateCcw size={14} /> Restaurar
-                    </button>
-                    <button 
-                      onClick={() => handleDeletarPermanente(item.id)}
-                      className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-rose-600 text-rose-600 opacity-70 hover:opacity-100 hover:bg-rose-600 hover:text-white transition-all font-bold text-[10px] uppercase tracking-widest cursor-pointer"
-                      title="Apagar Definitivo"
-                    >
-                      <Trash2 size={14} /> Purgar
                     </button>
                   </div>
                 </div>

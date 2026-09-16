@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_URL from '../config/api'
 import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt } from 'lucide-react'
 
 function Lucro({ token }) {
@@ -7,7 +8,7 @@ function Lucro({ token }) {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
+    const apiUrl = API_URL
 
     fetch(apiUrl + '/transacoes', { headers: { 'Authorization': `Bearer ${token}` } })
     .then(res => res.json())
