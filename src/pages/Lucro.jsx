@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import API_URL from '../config/api'
-import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt, BadgeDollarSign } from 'lucide-react'
 
 function Lucro({ token }) {
   const [movimentacoes, setMovimentacoes] = useState([])
@@ -20,6 +20,8 @@ function Lucro({ token }) {
         quantidade: t.quantidade,
         valorUnitario: t.precoUnitario,
         total: t.valorTotal,
+        custoUnitario: t.custoUnitario || 0,
+        lucro: t.lucro || 0,
         data: new Date(t.data).toLocaleDateString('pt-BR')
       }))
       setMovimentacoes(movs)
@@ -43,6 +45,9 @@ function Lucro({ token }) {
   const { totalEntradas, totalSaidas, saldoLiquido: saldo } = fluxo
   const totalMovimentado = totalEntradas + totalSaidas > 0 ? totalEntradas + totalSaidas : 1
   const percentualLucro = (totalEntradas / totalMovimentado) * 100
+  const lucroReal = movimentacoes
+    .filter(mov => mov.tipo === 'VENDA')
+    .reduce((total, mov) => total + mov.lucro, 0)
 
   const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -63,7 +68,7 @@ function Lucro({ token }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
             
             <div className="glass-panel p-6 flex flex-col justify-between border-l-2 border-emerald-500/50">
               <div className="flex items-center justify-between mb-6 opacity-60">
@@ -92,6 +97,16 @@ function Lucro({ token }) {
               </div>
               <h2 className={`text-3xl font-mono font-light tracking-tighter ${saldo >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                 <span className="text-sm opacity-50 mr-2">R$</span>{formatarMoeda(saldo)}
+              </h2>
+            </div>
+
+            <div className="glass-panel p-6 flex flex-col justify-between border-l-2 border-sky-500/60">
+              <div className="flex items-center justify-between mb-6 opacity-60">
+                <p className="text-[10px] uppercase tracking-widest font-bold">Lucro Real nas Vendas</p>
+                <BadgeDollarSign size={16} />
+              </div>
+              <h2 className={`text-3xl font-mono font-light tracking-tighter ${lucroReal >= 0 ? 'text-sky-500' : 'text-rose-500'}`}>
+                <span className="text-sm opacity-50 mr-2">R$</span>{formatarMoeda(lucroReal)}
               </h2>
             </div>
 
@@ -133,6 +148,11 @@ function Lucro({ token }) {
                         <span className="text-[10px] font-mono opacity-50 tracking-widest uppercase">
                           {mov.data} • {mov.quantidade} UN • R$ {formatarMoeda(mov.valorUnitario)}
                         </span>
+                        {mov.tipo === 'VENDA' && (
+                          <span className="text-[10px] font-mono text-sky-500/80 tracking-widest uppercase block mt-1">
+                            Custo: R$ {formatarMoeda(mov.custoUnitario)} • Lucro: R$ {formatarMoeda(mov.lucro)}
+                          </span>
+                        )}
                       </div>
                     </div>
                     

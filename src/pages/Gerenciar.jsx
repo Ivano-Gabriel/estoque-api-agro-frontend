@@ -13,7 +13,7 @@ function Gerenciar({ token }) {
   const [modoModal, setModoModal] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
 
-  const [form, setForm] = useState({ nome: '', preco: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE' })
+  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
 
@@ -39,12 +39,12 @@ function Gerenciar({ token }) {
   // Funções de abrir modal omitidas por espaço (são iguais às originais)
   function abrirModalNovo() {
     setProdutoSelecionado(null); setModoModal('novo');
-    setForm({ nome: '', preco: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE' })
+    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE' })
     setModalAberto(true)
   }
   function abrirModalEditar(produto) {
     setProdutoSelecionado(produto); setModoModal('editar');
-    setForm({ nome: produto.nome, preco: produto.preco || '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE' })
+    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE' })
     setModalAberto(true)
   }
   function abrirModalRepor(produto) {
@@ -59,8 +59,20 @@ function Gerenciar({ token }) {
 
   // Funções de API (Salvar, Deletar, Repor, Vender)
   function handleSalvar() {
-    const obj = { nome: form.nome, preco: parseFloat(form.preco), quantidadeEstoque: parseInt(form.quantidade), tipo: form.tipo, categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria } }
     const editando = Boolean(produtoSelecionado?.id)
+    const quantidade = editando ? produtoSelecionado.quantidadeEstoque : parseInt(form.quantidade || '0')
+    const custoUnitario = editando ? null : parseFloat(form.custo || '0')
+    if (!form.nome.trim() || !form.preco || quantidade < 0) return alert('Preencha os dados obrigatórios.')
+    if (!editando && quantidade > 0 && custoUnitario <= 0) return alert('Informe o custo do estoque inicial.')
+
+    const obj = {
+      nome: form.nome,
+      preco: parseFloat(form.preco),
+      custoUnitario,
+      quantidadeEstoque: quantidade,
+      tipo: form.tipo,
+      categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria }
+    }
     const url = editando ? `${API_URL}/produtos/${produtoSelecionado.id}` : `${API_URL}/produtos`
     fetch(url, { method: editando ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(obj) })
     .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao salvar."); })
@@ -254,11 +266,19 @@ function Gerenciar({ token }) {
                       <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Varejo (R$)</label>
                       <input value={form.preco} onChange={e => setForm({...form, preco: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
                     </div>
-                    <div className="flex-1">
-                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Volume Total</label>
-                      <input value={form.quantidade} onChange={e => setForm({...form, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
-                    </div>
+                    {modoModal === 'novo' && (
+                      <div className="flex-1">
+                        <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Estoque Inicial</label>
+                        <input value={form.quantidade} onChange={e => setForm({...form, quantidade: e.target.value})} type="number" min="0" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
+                      </div>
+                    )}
                   </div>
+                  {modoModal === 'novo' && (
+                    <div>
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Custo Unitário Inicial (R$)</label>
+                      <input value={form.custo} onChange={e => setForm({...form, custo: e.target.value})} type="number" min="0" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
+                    </div>
+                  )}
                   <div className="flex gap-4">
                     <div className="flex-1">
                       <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Setor</label>

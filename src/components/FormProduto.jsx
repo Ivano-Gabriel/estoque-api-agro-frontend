@@ -6,6 +6,8 @@ function FormProduto({ token, onProdutoAdicionado, onFechar }) {
   const [nome, setNome] = useState('')
   const [tipo, setTipo] = useState('')
   const [preco, setPreco] = useState('')
+  const [custo, setCusto] = useState('')
+  const [quantidade, setQuantidade] = useState('')
   const [dataValidade, setDataValidade] = useState('')
   const [categoria, setCategoria] = useState('')
 
@@ -20,6 +22,8 @@ function FormProduto({ token, onProdutoAdicionado, onFechar }) {
         nome,
         tipo,
         preco: parseFloat(preco),
+        custoUnitario: parseFloat(custo || '0'),
+        quantidadeEstoque: parseInt(quantidade || '0'),
         dataValidade,
         categoria: { nome: categoria }
       })
@@ -46,6 +50,8 @@ function FormProduto({ token, onProdutoAdicionado, onFechar }) {
           <input placeholder="Nome do produto" value={nome} onChange={e => setNome(e.target.value)} />
           <input placeholder="Tipo (ex: Pacote 1kg)" value={tipo} onChange={e => setTipo(e.target.value)} />
           <input placeholder="Preço (ex: 8.99)" value={preco} onChange={e => setPreco(e.target.value)} />
+          <input placeholder="Custo unitário inicial" value={custo} onChange={e => setCusto(e.target.value)} />
+          <input placeholder="Quantidade inicial" value={quantidade} onChange={e => setQuantidade(e.target.value)} />
           <input type="date" value={dataValidade} onChange={e => setDataValidade(e.target.value)} />
           <input placeholder="Categoria (ex: Alimentos)" value={categoria} onChange={e => setCategoria(e.target.value)} />
         </div>
