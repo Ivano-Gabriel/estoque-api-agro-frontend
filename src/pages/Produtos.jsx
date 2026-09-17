@@ -97,7 +97,7 @@ function Produtos({ token }) {
               onClick={() => setCategoriaSelecionada(cat)}
               className={`flex-shrink-0 px-5 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all border ${
                 categoriaSelecionada === cat 
-                  ? 'bg-current text-[var(--bg-color)] border-current shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
+                  ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)] shadow-[0_0_15px_rgba(127,127,127,0.15)]'
                   : 'bg-transparent opacity-60 border-current/20 hover:opacity-100 hover:border-current/50'
               }`}
             >
@@ -209,10 +209,10 @@ function Produtos({ token }) {
             </div>
 
             <div className="p-6 border-t border-current/10 bg-current/5 flex justify-end gap-3">
-              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors">
+              <button onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                 Cancelar
               </button>
-              <button onClick={handleVender} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors flex items-center gap-2">
+              <button onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
                 <ShoppingCart size={14} /> Confirmar
               </button>
             </div>

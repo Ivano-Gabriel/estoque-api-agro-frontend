@@ -339,7 +339,7 @@ function Gerenciar({ token }) {
             </div>
 
             <div className="p-5 border-t border-current/10 bg-current/5 flex justify-end gap-3">
-              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest opacity-50 hover:opacity-100 transition-colors">
+              <button onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                 Abortar
               </button>
               
@@ -350,19 +350,19 @@ function Gerenciar({ token }) {
               )}
 
               {modoModal === 'repor' && (
-                <button onClick={handleRepor} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors">
+                <button onClick={handleRepor} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                   Executar Entrada
                 </button>
               )}
 
               {modoModal === 'vender' && (
-                <button onClick={handleVender} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors">
+                <button onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                   Executar Saída
                 </button>
               )}
 
               {(modoModal === 'novo' || modoModal === 'editar') && (
-                <button onClick={handleSalvar} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors">
+                <button onClick={handleSalvar} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                   Gravar Dados
                 </button>
               )}
