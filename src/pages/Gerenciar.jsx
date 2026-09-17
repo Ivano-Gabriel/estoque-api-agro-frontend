@@ -256,7 +256,7 @@ function Gerenciar({ token, role }) {
                           <button onClick={() => abrirModalVender(p)} title="Vender" className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all cursor-pointer"><ShoppingCart size={14} /></button>
                           <button onClick={() => abrirModalRepor(p)} title="Repor" className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all cursor-pointer"><TrendingUp size={14} /></button>
                           <button onClick={() => abrirModalEditar(p)} title="Editar" className="p-2 border border-current/20 hover:border-current hover:bg-current/10 rounded-sm transition-all opacity-60 cursor-pointer"><Edit size={14} /></button>
-                          <button onClick={() => abrirModalDeletar(p)} title="Excluir" className="p-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all cursor-pointer"><Trash2 size={14} /></button>
+                          <button onClick={() => abrirModalDeletar(p)} title="Mover para lixeira" className="p-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all cursor-pointer"><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>
@@ -298,7 +298,7 @@ function Gerenciar({ token, role }) {
                     <button onClick={() => abrirModalEditar(p)} className="flex-1 flex justify-center p-3 border border-current/20 hover:bg-current/10 rounded-sm transition-all opacity-60 cursor-pointer">
                       <Edit size={16} />
                     </button>
-                    <button onClick={() => abrirModalDeletar(p)} className="flex-1 flex justify-center p-3 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all cursor-pointer">
+                    <button onClick={() => abrirModalDeletar(p)} title="Mover para lixeira" className="flex-1 flex justify-center p-3 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 rounded-sm transition-all cursor-pointer">
                       <Trash2 size={16} />
                     </button>
                   </div>
@@ -402,7 +402,7 @@ function Gerenciar({ token, role }) {
                 {modoModal === 'editar' && 'Ajuste de Ativo'}
                 {modoModal === 'repor' && 'Entrada de Estoque'}
                 {modoModal === 'vender' && 'Saída / Venda'}
-                {modoModal === 'deletar' && 'Purga de Dados'}
+                {modoModal === 'deletar' && 'Mover para Lixeira'}
               </h2>
               <button onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors">
                 <X size={18} />
@@ -487,7 +487,7 @@ function Gerenciar({ token, role }) {
               {modoModal === 'deletar' && (
                 <div className="p-4 border border-rose-500/30 bg-rose-500/5 rounded-sm">
                   <p className="text-xs font-mono opacity-80 uppercase tracking-widest leading-relaxed">
-                    Exclusão permanente de ativo: <br/><strong className="text-rose-500">{produtoSelecionado?.nome}</strong>. <br/>Não há retorno.
+                    Mover produto para a lixeira: <br/><strong className="text-rose-500">{produtoSelecionado?.nome}</strong>. <br/>Você poderá restaurá-lo em Ajustes.
                   </p>
                 </div>
               )}
@@ -500,7 +500,7 @@ function Gerenciar({ token, role }) {
               
               {modoModal === 'deletar' && (
                 <button onClick={handleDeletar} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors">
-                  Purgar
+                  Mover para Lixeira
                 </button>
               )}
 
