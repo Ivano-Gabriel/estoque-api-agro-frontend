@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, Layers, Search, Filter } from 'lucide-react'
+import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, Layers, Search, Filter, Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import API_URL from '../config/api'
 
-function Gerenciar({ token }) {
+function Gerenciar({ token, role }) {
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
 
@@ -16,6 +16,10 @@ function Gerenciar({ token }) {
   const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
+  const [modalImportacao, setModalImportacao] = useState(false)
+  const [arquivoImportacao, setArquivoImportacao] = useState(null)
+  const [importando, setImportando] = useState(false)
+  const [resultadoImportacao, setResultadoImportacao] = useState(null)
 
   const carregarProdutos = useCallback(() => {
     setCarregando(true)
@@ -94,6 +98,68 @@ function Gerenciar({ token }) {
     .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao vender."); })
   }
 
+  function abrirImportacao() {
+    setArquivoImportacao(null)
+    setResultadoImportacao(null)
+    setModalImportacao(true)
+  }
+
+  async function baixarModeloImportacao() {
+    try {
+      const resposta = await fetch(`${API_URL}/produtos/importacao/modelo`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (!resposta.ok) throw new Error()
+
+      const url = URL.createObjectURL(await resposta.blob())
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'modelo-importacao-estoque.xlsx'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Não foi possível baixar o modelo.')
+    }
+  }
+
+  async function importarPlanilha() {
+    if (!arquivoImportacao) {
+      setResultadoImportacao({ erros: [{ linha: 0, campo: 'arquivo', mensagem: 'Selecione uma planilha.' }] })
+      return
+    }
+
+    setImportando(true)
+    setResultadoImportacao(null)
+    try {
+      const dados = new FormData()
+      dados.append('arquivo', arquivoImportacao)
+
+      const resposta = await fetch(`${API_URL}/produtos/importacao`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: dados
+      })
+      const resultado = await resposta.json()
+      setResultadoImportacao(
+        resposta.ok || resultado.erros
+          ? resultado
+          : { erros: [{ linha: 0, campo: 'arquivo', mensagem: resultado.erro || 'Não foi possível importar.' }] }
+      )
+      if (resposta.ok) {
+        setArquivoImportacao(null)
+        carregarProdutos()
+      }
+    } catch {
+      setResultadoImportacao({
+        erros: [{ linha: 0, campo: 'conexao', mensagem: 'Servidor indisponível. Tente novamente.' }]
+      })
+    } finally {
+      setImportando(false)
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
       
@@ -102,9 +168,16 @@ function Gerenciar({ token }) {
           <h1 className="text-2xl font-bold tracking-widest uppercase">Gestão</h1>
           <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">Controle de Inventário</p>
         </div>
-        <button onClick={abrirModalNovo} className="border border-current bg-current/5 hover:bg-current hover:text-[var(--bg-color)] transition-all px-6 py-2.5 rounded-sm font-bold text-xs tracking-widest uppercase flex items-center gap-2">
-          <Plus size={14} /> Registro
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {role === 'ADMIN' && (
+            <button onClick={abrirImportacao} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+              <Upload size={14} /> Importar Excel
+            </button>
+          )}
+          <button onClick={abrirModalNovo} className="btn-primary px-6 py-2.5 rounded-sm font-bold text-xs tracking-widest uppercase flex items-center gap-2">
+            <Plus size={14} /> Registro
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -235,6 +308,88 @@ function Gerenciar({ token }) {
           </>
         )}
       </div>
+
+      {modalImportacao && (
+        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="glass-panel !bg-[var(--bg-color)] w-full max-w-xl rounded-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center p-6 border-b border-current/10">
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet size={19} />
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-widest">Importar Produtos</h2>
+                  <p className="text-[9px] opacity-50 uppercase tracking-widest mt-1">Somente administradores</p>
+                </div>
+              </div>
+              <button onClick={() => setModalImportacao(false)} className="opacity-50 hover:opacity-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="border border-current/15 bg-current/5 p-4 text-[10px] leading-relaxed uppercase tracking-wider opacity-75">
+                Use o modelo oficial. Se qualquer linha estiver incorreta, nenhum produto será cadastrado.
+              </div>
+
+              <button onClick={baixarModeloImportacao} className="btn-secondary w-full p-3 rounded-sm font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+                <Download size={15} /> Baixar modelo Excel
+              </button>
+
+              <label className="block border border-dashed border-current/30 hover:border-current/60 p-6 rounded-sm text-center cursor-pointer transition-colors">
+                <Upload size={22} className="mx-auto mb-3 opacity-50" />
+                <span className="block text-[10px] font-bold uppercase tracking-widest">
+                  {arquivoImportacao ? arquivoImportacao.name : 'Selecionar planilha .xlsx ou .xls'}
+                </span>
+                <span className="block text-[9px] opacity-40 uppercase tracking-widest mt-2">Máximo de 5 MB e 1.000 produtos</span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  className="hidden"
+                  onChange={event => {
+                    setArquivoImportacao(event.target.files?.[0] || null)
+                    setResultadoImportacao(null)
+                  }}
+                />
+              </label>
+
+              {resultadoImportacao?.totalImportado > 0 && (
+                <div className="border border-emerald-500/30 bg-emerald-500/5 text-emerald-500 p-4 flex items-center gap-3">
+                  <CheckCircle2 size={20} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">
+                    {resultadoImportacao.totalImportado} produtos importados com sucesso
+                  </span>
+                </div>
+              )}
+
+              {resultadoImportacao?.erros?.length > 0 && (
+                <div className="border border-rose-500/30 bg-rose-500/5 p-4">
+                  <div className="flex items-center gap-2 text-rose-500 mb-3">
+                    <AlertTriangle size={17} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">
+                      Corrija {resultadoImportacao.erros.length} erro(s)
+                    </span>
+                  </div>
+                  <div className="max-h-40 overflow-y-auto space-y-2">
+                    {resultadoImportacao.erros.slice(0, 20).map((erro, indice) => (
+                      <p key={`${erro.linha}-${erro.campo}-${indice}`} className="text-[10px] font-mono opacity-75">
+                        {erro.linha > 0 ? `Linha ${erro.linha}` : 'Arquivo'} • {erro.campo}: {erro.mensagem}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 border-t border-current/10 bg-current/5 flex justify-end gap-3">
+              <button onClick={() => setModalImportacao(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
+                Fechar
+              </button>
+              <button onClick={importarPlanilha} disabled={importando} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+                <Upload size={14} /> {importando ? 'Validando...' : 'Validar e importar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CAMALEÃO */}
       {modalAberto && (

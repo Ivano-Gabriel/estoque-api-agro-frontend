@@ -58,7 +58,7 @@ function App() {
             <Route path="/" element={<Layout role={role} onLogout={sair} />}>
               <Route index element={role === 'ADMIN' ? <Hub token={token} /> : <Navigate to="/produtos" replace />} />
               <Route path="produtos" element={<Produtos token={token} />} />
-              <Route path="gerenciar" element={<Gerenciar token={token} />} />
+              <Route path="gerenciar" element={<Gerenciar token={token} role={role} />} />
               <Route path="lucro" element={role === 'ADMIN' ? <Lucro token={token} /> : <Navigate to="/produtos" replace />} />
               <Route path="config" element={<Configuracoes token={token} role={role} />} />
               <Route path="*" element={<Navigate to={role === 'ADMIN' ? '/' : '/produtos'} replace />} />
