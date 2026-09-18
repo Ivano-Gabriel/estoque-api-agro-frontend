@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, ShoppingCart, PackageSearch, Tag, X, FileText } from 'lucide-react'
+import API_URL from '../config/api'
 
 function Produtos({ token }) {
   const [produtos, setProdutos] = useState([])
@@ -11,31 +12,19 @@ function Produtos({ token }) {
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [modalAberto, setModalAberto] = useState(false)
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', gerarNota: false })
-  const [usuarioId, setUsuarioId] = useState(null)
 
-  useEffect(() => {
-    const userData = localStorage.getItem('userData')
-    if (userData) {
-      try {
-        setUsuarioId(JSON.parse(userData).id)
-        return
-      } catch (e) { console.log('Erro ao parsear userData') }
-    }
-    setUsuarioId(1)
-  }, [])
-
-  function recarregarProdutos() {
+  const recarregarProdutos = useCallback(() => {
     setCarregando(true)
-    fetch(import.meta.env.VITE_API_URL + '/produtos', {
+    fetch(API_URL + '/produtos', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => res.ok ? res.json() : [])
     .then(data => setProdutos(data))
     .catch(err => console.log(err))
     .finally(() => setCarregando(false))
-  }
+  }, [token])
   
-  useEffect(() => { recarregarProdutos() }, [token])
+  useEffect(() => { recarregarProdutos() }, [recarregarProdutos])
 
   const categorias = ['Todas', ...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean)), 'Sem Categoria']
 
@@ -61,12 +50,10 @@ function Produtos({ token }) {
       return
     }
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://estoque-api-agro.onrender.com'
-    
-    fetch(apiUrl + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
+    fetch(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ quantidade: qtd, precoVenda: preco, usuarioId: usuarioId || 1 })
+      body: JSON.stringify({ quantidade: qtd, preco })
     })
     .then(res => {
       if (res.ok) {
@@ -110,7 +97,7 @@ function Produtos({ token }) {
               onClick={() => setCategoriaSelecionada(cat)}
               className={`flex-shrink-0 px-5 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all border ${
                 categoriaSelecionada === cat 
-                  ? 'bg-current text-[var(--bg-color)] border-current shadow-[0_0_15px_rgba(255,255,255,0.1)]' 
+                  ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)] shadow-[0_0_15px_rgba(127,127,127,0.15)]'
                   : 'bg-transparent opacity-60 border-current/20 hover:opacity-100 hover:border-current/50'
               }`}
             >
@@ -222,10 +209,10 @@ function Produtos({ token }) {
             </div>
 
             <div className="p-6 border-t border-current/10 bg-current/5 flex justify-end gap-3">
-              <button onClick={() => setModalAberto(false)} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest opacity-60 hover:opacity-100 transition-colors">
+              <button onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                 Cancelar
               </button>
-              <button onClick={handleVender} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-current text-[var(--bg-color)] hover:opacity-80 transition-colors flex items-center gap-2">
+              <button onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
                 <ShoppingCart size={14} /> Confirmar
               </button>
             </div>

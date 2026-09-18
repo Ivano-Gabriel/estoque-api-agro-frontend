@@ -1,11 +1,13 @@
 import { useState } from 'react'
 
+import API_URL from '../config/api'
+
 function FormQuantidade({ produto, tipo, token, onFechar, onAtualizado }) {
   const [quantidade, setQuantidade] = useState('')
 
   async function handleConfirmar() {
     const rota = tipo === 'vender' ? 'vender' : 'comprar'
-    await fetch(`https://estoque-api-agro.onrender.com/produtos/${produto.id}/${rota}?quantidade=${quantidade}`, {
+    await fetch(`${API_URL}/produtos/${produto.id}/${rota}?quantidade=${quantidade}`, {
       method: 'PUT',
       headers: { 'Authorization': 'Bearer ' + token }
     })

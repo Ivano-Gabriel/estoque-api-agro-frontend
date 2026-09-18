@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Boxes, LockKeyhole, LogIn, Mail } from 'lucide-react'
+import API_URL from '../config/api'
 
 function Login({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -6,121 +8,87 @@ function Login({ onLogin }) {
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
 
-  function handleLogin(e) {
-    e.preventDefault()
+  async function handleLogin(event) {
+    event.preventDefault()
     setCarregando(true)
     setErro('')
 
-    fetch(import.meta.env.VITE_API_URL + '/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, senha })
-    })
-    .then(res => {
-      if (res.ok) {
-        return res.text() // ← VOLTA A SER TEXTO!
+    try {
+      const resposta = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha })
+      })
+
+      if (!resposta.ok) {
+        throw new Error(resposta.status === 401
+          ? 'E-mail ou senha incorretos.'
+          : 'Não foi possível entrar agora. Tente novamente.')
       }
-      throw new Error('E-mail ou senha incorretos.')
-    })
-    .then(token => {
-      // 🔥 SALVA O USUÁRIO COM ID 1 (já que o backend não manda)
-      localStorage.setItem('userData', JSON.stringify({
-        id: 1,
-        email: email
-      }))
-      
-      // Chama a função do App com o token
-      onLogin(token)
-    })
-    .catch(err => {
-      setErro(err.message)
-    })
-    .finally(() => {
+
+      onLogin(await resposta.json())
+    } catch (error) {
+      setErro(error instanceof TypeError
+        ? 'Servidor indisponível. Verifique sua conexão.'
+        : error.message)
+    } finally {
       setCarregando(false)
-    })
+    }
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#0f172a',
-      color: '#f8fafc',
-      fontFamily: 'sans-serif',
-      padding: '20px',
-      boxSizing: 'border-box'
-    }}>
-      <div style={{
-        background: '#1e293b',
-        padding: '40px',
-        borderRadius: '24px',
-        border: '1px solid #334155',
-        width: '100%',
-        maxWidth: '400px',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
-        textAlign: 'center',
-        boxSizing: 'border-box'
-      }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#38bdf8', margin: '0 0 8px 0' }}>
-          Estoque Inteligente
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: '14px', margin: '0 0 32px 0' }}>
-          Entre com as suas credenciais de acesso.
-        </p>
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px' }}>
-              E-mail
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              required
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: '10px',
-                border: '1px solid #334155',
-                background: '#0f172a',
-                color: '#f8fafc',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
+    <div className="min-h-screen bg-dinamico bg-cover bg-center flex items-center justify-center p-5">
+      <main className="glass-panel w-full max-w-md !border-l-2 p-7 sm:p-10">
+        <div className="flex items-center gap-4 mb-10">
+          <div className="w-12 h-12 border border-current/30 bg-current/5 flex items-center justify-center">
+            <Boxes size={23} strokeWidth={1.7} />
           </div>
-
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#94a3b8', marginBottom: '8px' }}>
-              Senha
-            </label>
-            <input
-              type="password"
-              value={senha}
-              onChange={e => setSenha(e.target.value)}
-              placeholder="••••••••"
-              required
-              style={{
-                width: '100%',
-                padding: '14px',
-                borderRadius: '10px',
-                border: '1px solid #334155',
-                background: '#0f172a',
-                color: '#f8fafc',
-                fontSize: '14px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
+          <div>
+            <p className="text-[9px] uppercase tracking-[0.35em] opacity-50 font-bold mb-1">Acesso protegido</p>
+            <h1 className="text-xl font-black tracking-[0.18em] uppercase">Estoque</h1>
           </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-sm font-bold uppercase tracking-widest mb-2">Bem-vinda</h2>
+          <p className="text-xs opacity-55 leading-relaxed">Entre com as credenciais fornecidas pelo administrador.</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          <label className="block">
+            <span className="block text-[9px] font-bold opacity-55 uppercase tracking-widest mb-2">E-mail</span>
+            <div className="relative">
+              <Mail size={15} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
+              <input
+                type="email"
+                value={email}
+                onChange={event => setEmail(event.target.value)}
+                placeholder="usuario@loja.com"
+                autoComplete="username"
+                required
+                className="control-field w-full py-3.5 pl-11 pr-4 rounded-sm text-sm"
+              />
+            </div>
+          </label>
+
+          <label className="block">
+            <span className="block text-[9px] font-bold opacity-55 uppercase tracking-widest mb-2">Senha</span>
+            <div className="relative">
+              <LockKeyhole size={15} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
+              <input
+                type="password"
+                value={senha}
+                onChange={event => setSenha(event.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+                className="control-field w-full py-3.5 pl-11 pr-4 rounded-sm text-sm"
+              />
+            </div>
+          </label>
 
           {erro && (
-            <p style={{ color: '#ef4444', fontSize: '13px', margin: '0', fontWeight: '600' }}>
+            <p role="alert" className="border border-rose-500/30 bg-rose-500/5 text-rose-500 p-3 text-[11px] font-semibold rounded-sm">
               {erro}
             </p>
           )}
@@ -128,25 +96,17 @@ function Login({ onLogin }) {
           <button
             type="submit"
             disabled={carregando}
-            style={{
-              width: '100%',
-              padding: '14px',
-              borderRadius: '12px',
-              border: 'none',
-              background: '#3b82f6',
-              color: '#fff',
-              fontWeight: '700',
-              fontSize: '15px',
-              cursor: carregando ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)',
-              transition: 'all 0.2s',
-              marginTop: '10px'
-            }}
+            className="btn-primary w-full p-3.5 rounded-sm font-bold text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2"
           >
-            {carregando ? 'Conectando...' : 'Entrar no Sistema'}
+            <LogIn size={15} />
+            {carregando ? 'Conectando...' : 'Entrar no sistema'}
           </button>
         </form>
-      </div>
+
+        <p className="text-center text-[9px] uppercase tracking-widest opacity-35 mt-8">
+          Sessão individual e protegida
+        </p>
+      </main>
     </div>
   )
 }

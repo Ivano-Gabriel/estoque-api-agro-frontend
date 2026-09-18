@@ -1,6 +1,7 @@
 import { PackageSearch, AlertTriangle, DollarSign, TrendingUp, ArrowRight, Activity, ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import API_URL from '../config/api'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 function Hub({ token }) {
@@ -14,8 +15,7 @@ function Hub({ token }) {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8081' // Forçando o localhost caso não esteja na nuvem
-    fetch(apiUrl + '/estatisticas/dashboard', {
+    fetch(API_URL + '/estatisticas/dashboard', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
     .then(res => {
