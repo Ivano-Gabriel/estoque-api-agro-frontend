@@ -1,8 +1,9 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool } from 'lucide-react'
 import { useState } from 'react'
+import RelatorioWhatsapp from './RelatorioWhatsapp'
 
-function Layout({ role, onLogout }) {
+function Layout({ role, token, onLogout }) {
   const location = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
 
@@ -114,6 +115,8 @@ function Layout({ role, onLogout }) {
             )
           })}
         </nav>
+
+        <RelatorioWhatsapp token={token} />
 
       </div>
     </>

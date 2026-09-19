@@ -55,7 +55,7 @@ function App() {
       ) : (
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Layout role={role} onLogout={sair} />}>
+            <Route path="/" element={<Layout role={role} token={token} onLogout={sair} />}>
               <Route index element={role === 'ADMIN' ? <Hub token={token} /> : <Navigate to="/produtos" replace />} />
               <Route path="produtos" element={<Produtos token={token} />} />
               <Route path="gerenciar" element={<Gerenciar token={token} role={role} />} />
