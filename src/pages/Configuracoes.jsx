@@ -1,20 +1,25 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Sun, Moon, Database, ArchiveX, RotateCcw, UserPlus } from 'lucide-react'
-import API_URL from '../config/api'
+import API_URL, { apiFetch as fetch } from '../config/api'
+import AcessosFuncionarias from '../components/AcessosFuncionarias'
+import useOperacao from '../hooks/useOperacao'
 
 function Configuracoes({ token, role }) {
   const [isDark, setIsDark] = useState(true)
   const [lixeira, setLixeira] = useState([])
   const [novaFuncionaria, setNovaFuncionaria] = useState({ email: '', senha: '' })
   const [salvandoUsuario, setSalvandoUsuario] = useState(false)
+  const [erroLixeira, setErroLixeira] = useState('')
+  const { enviando, executar } = useOperacao()
 
   const carregarLixeira = useCallback(() => {
+    setErroLixeira('')
     fetch(API_URL + '/produtos/lixeira', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-    .then(res => res.ok ? res.json() : [])
+    .then(res => res.json())
     .then(data => setLixeira(data))
-    .catch(err => console.log('Erro ao carregar lixeira', err))
+    .catch(err => setErroLixeira(err.message))
   }, [token])
 
   useEffect(() => {
@@ -23,19 +28,14 @@ function Configuracoes({ token, role }) {
   }, [carregarLixeira])
 
   const handleRestaurar = (id) => {
-    fetch(API_URL + `/produtos/${id}/restaurar`, {
+    executar(async () => {
+      await fetch(API_URL + `/produtos/${id}/restaurar`, {
       method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` }
+      })
+      carregarLixeira()
+      alert('Produto restaurado e de volta ao inventário.')
     })
-    .then(res => {
-      if (res.ok) {
-        carregarLixeira()
-        alert("Ativo restaurado e de volta ao inventário principal.")
-      } else {
-        alert("Erro ao restaurar ativo.")
-      }
-    })
-    .catch(() => alert("Falha na conexão ao restaurar."))
   }
 
   const toggleTheme = () => {
@@ -70,6 +70,7 @@ function Configuracoes({ token, role }) {
       }
 
       setNovaFuncionaria({ email: '', senha: '' })
+      window.dispatchEvent(new Event('usuarios-alterados'))
       alert('Funcionária cadastrada com sucesso.')
     } catch (error) {
       alert(error.message)
@@ -148,13 +149,15 @@ function Configuracoes({ token, role }) {
           </form>
         )}
 
+        {role === 'ADMIN' && <AcessosFuncionarias token={token} />}
+
         <div className="glass-panel p-6 md:col-span-2">
           <div className="flex items-center gap-3 border-b border-current/20 pb-4 mb-4 opacity-90">
             <ArchiveX size={16} className="opacity-70" />
             <h2 className="text-xs font-bold uppercase tracking-widest">Arquivo Morto (Inativos)</h2>
           </div>
 
-          {lixeira.length === 0 ? (
+          {erroLixeira ? <p role="alert">{erroLixeira} <button className="underline" onClick={carregarLixeira}>Tentar novamente</button></p> : lixeira.length === 0 ? (
             <div className="text-center py-8 opacity-40">
               <p className="font-mono text-[10px] uppercase tracking-widest">Nenhum ativo na lixeira.</p>
             </div>
@@ -172,6 +175,7 @@ function Configuracoes({ token, role }) {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => handleRestaurar(item.id)}
+                      disabled={enviando}
                       className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-current opacity-70 hover:opacity-100 hover:bg-current hover:text-[var(--bg-color)] transition-all font-bold text-[10px] uppercase tracking-widest cursor-pointer"
                     >
                       <RotateCcw size={14} /> Restaurar

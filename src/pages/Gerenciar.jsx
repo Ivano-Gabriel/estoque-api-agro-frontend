@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, Layers, Search, Filter, Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react'
-import API_URL from '../config/api'
+import API_URL, { apiFetch as fetch } from '../config/api'
+import { enviarMovimentacao } from '../config/api'
+import useOperacao from '../hooks/useOperacao'
 
 function Gerenciar({ token, role }) {
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState('')
+  const { enviando, executar } = useOperacao()
 
   const [termoBusca, setTermoBusca] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
@@ -13,7 +17,7 @@ function Gerenciar({ token, role }) {
   const [modoModal, setModoModal] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
 
-  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE' })
+  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
   const [modalImportacao, setModalImportacao] = useState(false)
@@ -23,14 +27,19 @@ function Gerenciar({ token, role }) {
 
   const carregarProdutos = useCallback(() => {
     setCarregando(true)
+    setErroCarga('')
     fetch(API_URL + '/produtos', { headers: { 'Authorization': `Bearer ${token}` } })
-    .then(res => res.ok ? res.json() : [])
+    .then(res => res.json())
     .then(data => setProdutos(data))
-    .catch(err => console.log(err))
+    .catch(err => setErroCarga(err.message))
     .finally(() => setCarregando(false))
   }, [token])
 
   useEffect(() => { carregarProdutos() }, [carregarProdutos])
+  useEffect(() => {
+    window.addEventListener('estoque-alterado', carregarProdutos)
+    return () => window.removeEventListener('estoque-alterado', carregarProdutos)
+  }, [carregarProdutos])
 
   const categoriasExistentes = [...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean))]
 
@@ -43,12 +52,12 @@ function Gerenciar({ token, role }) {
   // Funções de abrir modal omitidas por espaço (são iguais às originais)
   function abrirModalNovo() {
     setProdutoSelecionado(null); setModoModal('novo');
-    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE' })
+    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '' })
     setModalAberto(true)
   }
   function abrirModalEditar(produto) {
     setProdutoSelecionado(produto); setModoModal('editar');
-    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE' })
+    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE', dataValidade: produto.dataValidade || '' })
     setModalAberto(true)
   }
   function abrirModalRepor(produto) {
@@ -64,9 +73,9 @@ function Gerenciar({ token, role }) {
   // Funções de API (Salvar, Deletar, Repor, Vender)
   function handleSalvar() {
     const editando = Boolean(produtoSelecionado?.id)
-    const quantidade = editando ? produtoSelecionado.quantidadeEstoque : parseInt(form.quantidade || '0')
+    const quantidade = editando ? produtoSelecionado.quantidadeEstoque : Number(form.quantidade || '0')
     const custoUnitario = editando ? null : parseFloat(form.custo || '0')
-    if (!form.nome.trim() || !form.preco || quantidade < 0) return alert('Preencha os dados obrigatórios.')
+    if (!form.nome.trim() || !form.preco || !Number.isSafeInteger(quantidade) || quantidade < 0) return alert('Preencha os dados obrigatórios.')
     if (!editando && quantidade > 0 && custoUnitario <= 0) return alert('Informe o custo do estoque inicial.')
 
     const obj = {
@@ -75,27 +84,36 @@ function Gerenciar({ token, role }) {
       custoUnitario,
       quantidadeEstoque: quantidade,
       tipo: form.tipo,
+      dataValidade: form.dataValidade || produtoSelecionado?.dataValidade || null,
       categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria }
     }
     const url = editando ? `${API_URL}/produtos/${produtoSelecionado.id}` : `${API_URL}/produtos`
-    fetch(url, { method: editando ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(obj) })
-    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao salvar."); })
+    executar(async () => {
+      await fetch(url, { method: editando ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(obj) })
+      setModalAberto(false); carregarProdutos()
+    })
   }
   function handleDeletar() {
-    fetch(API_URL + `/produtos/${produtoSelecionado.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
-    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao deletar."); })
+    executar(async () => {
+      await fetch(API_URL + `/produtos/${produtoSelecionado.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
+      setModalAberto(false); carregarProdutos()
+    })
   }
   function handleRepor() {
-    const qtd = parseInt(formRepor.quantidade); const custo = parseFloat(formRepor.precoCusto);
-    if (!qtd || !custo) return alert("Preencha corretamente.")
-    fetch(API_URL + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, preco: custo }) })
-    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao repor."); })
+    const qtd = Number(formRepor.quantidade); const custo = Number(formRepor.precoCusto);
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || custo <= 0) return alert('Informe quantidade inteira e custo positivo.')
+    executar(async () => {
+      await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { quantidade: qtd, preco: custo }, token)
+      setModalAberto(false)
+    })
   }
   function handleVender() {
-    const qtd = parseInt(formVender.quantidade); const preco = parseFloat(formVender.precoVenda);
-    if (!qtd || !preco) return alert("Preencha corretamente.")
-    fetch(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ quantidade: qtd, preco }) })
-    .then(res => { if(res.ok) { setModalAberto(false); carregarProdutos(); } else alert("Erro ao vender."); })
+    const qtd = Number(formVender.quantidade); const preco = Number(formVender.precoVenda);
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || preco <= 0) return alert('Informe quantidade inteira e preço positivo.')
+    executar(async () => {
+      await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { quantidade: qtd, preco }, token)
+      setModalAberto(false)
+    })
   }
 
   function abrirImportacao() {
@@ -159,6 +177,8 @@ function Gerenciar({ token, role }) {
       setImportando(false)
     }
   }
+
+  if (erroCarga) return <div role="alert" className="glass-panel p-6 space-y-4"><p>{erroCarga}</p><button className="btn-primary p-3" onClick={carregarProdutos}>Tentar carregar novamente</button></div>
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
@@ -404,7 +424,7 @@ function Gerenciar({ token, role }) {
                 {modoModal === 'vender' && 'Saída / Venda'}
                 {modoModal === 'deletar' && 'Mover para Lixeira'}
               </h2>
-              <button onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors">
+              <button disabled={enviando} onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -416,6 +436,10 @@ function Gerenciar({ token, role }) {
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Identificação</label>
                     <input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all text-sm font-bold uppercase tracking-wider" />
                   </div>
+                  <label className="block text-xs">
+                    Validade (opcional; em branco mantém a data existente)
+                    <input type="date" value={form.dataValidade || ''} onChange={e => setForm({...form, dataValidade: e.target.value})} className="control-field w-full p-2.5 mt-2" />
+                  </label>
                   <div className="flex gap-4">
                     <div className="flex-1">
                       <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Varejo (R$)</label>
@@ -494,30 +518,30 @@ function Gerenciar({ token, role }) {
             </div>
 
             <div className="p-5 border-t border-current/10 bg-current/5 flex justify-end gap-3">
-              <button onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
+              <button disabled={enviando} onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                 Abortar
               </button>
               
               {modoModal === 'deletar' && (
-                <button onClick={handleDeletar} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors">
+                <button disabled={enviando} onClick={handleDeletar} className="px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest bg-rose-600 text-white hover:bg-rose-700 transition-colors">
                   Mover para Lixeira
                 </button>
               )}
 
               {modoModal === 'repor' && (
-                <button onClick={handleRepor} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
+                <button disabled={enviando} onClick={handleRepor} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                   Executar Entrada
                 </button>
               )}
 
               {modoModal === 'vender' && (
-                <button onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
+                <button disabled={enviando} onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                   Executar Saída
                 </button>
               )}
 
               {(modoModal === 'novo' || modoModal === 'editar') && (
-                <button onClick={handleSalvar} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
+                <button disabled={enviando} onClick={handleSalvar} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                   Gravar Dados
                 </button>
               )}

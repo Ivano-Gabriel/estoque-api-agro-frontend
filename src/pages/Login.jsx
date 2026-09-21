@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Boxes, LockKeyhole, LogIn, Mail } from 'lucide-react'
-import API_URL from '../config/api'
+import API_URL, { apiFetch as fetch } from '../config/api'
 
-function Login({ onLogin }) {
+function Login({ onLogin, aviso }) {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState('')
@@ -10,6 +10,7 @@ function Login({ onLogin }) {
 
   async function handleLogin(event) {
     event.preventDefault()
+    if (carregando) return
     setCarregando(true)
     setErro('')
 
@@ -87,9 +88,9 @@ function Login({ onLogin }) {
             </div>
           </label>
 
-          {erro && (
+          {(erro || aviso) && (
             <p role="alert" className="border border-rose-500/30 bg-rose-500/5 text-rose-500 p-3 text-[11px] font-semibold rounded-sm">
-              {erro}
+              {erro || aviso}
             </p>
           )}
 

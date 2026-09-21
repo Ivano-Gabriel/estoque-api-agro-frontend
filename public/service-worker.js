@@ -1,4 +1,4 @@
-const CACHE_NAME = 'estoque-interface-v1'
+const CACHE_NAME = 'estoque-interface-v2'
 const APP_SHELL = [
   '/',
   '/index.html',

@@ -8,11 +8,33 @@ import Produtos from './pages/Produtos'
 import Gerenciar from './pages/Gerenciar'
 import Lucro from './pages/Lucro'
 import Configuracoes from './pages/Configuracoes'
+import OperacaoPendente from './components/OperacaoPendente'
 
 function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('accessToken'))
   const [role, setRole] = useState(() => sessionStorage.getItem('userRole'))
   const [online, setOnline] = useState(() => navigator.onLine)
+  const [avisoSessao, setAvisoSessao] = useState('')
+
+  useEffect(() => {
+    const expirar = (event) => {
+      if (event?.detail && event.detail !== `Bearer ${token}`) return
+      sessionStorage.removeItem('accessToken')
+      sessionStorage.removeItem('userRole')
+      setToken(null)
+      setRole(null)
+      setAvisoSessao('Sua sessão terminou. Entre novamente para continuar.')
+    }
+    window.addEventListener('sessao-expirada', expirar)
+    let timer
+    if (token) {
+      try {
+        const { exp } = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+        timer = setTimeout(expirar, Math.max(0, exp * 1000 - Date.now()))
+      } catch { timer = setTimeout(expirar, 0) }
+    }
+    return () => { clearTimeout(timer); window.removeEventListener('sessao-expirada', expirar) }
+  }, [token])
 
   useEffect(() => {
     const ficouOnline = () => setOnline(true)
@@ -27,6 +49,7 @@ function App() {
   }, [])
 
   function entrar(sessao) {
+    setAvisoSessao('')
     sessionStorage.setItem('accessToken', sessao.token)
     sessionStorage.setItem('userRole', sessao.role)
     sessionStorage.setItem('userEmail', sessao.email)
@@ -51,9 +74,10 @@ function App() {
       )}
 
       {!token ? (
-        <Login onLogin={entrar} />
+        <Login onLogin={entrar} aviso={avisoSessao} />
       ) : (
         <BrowserRouter>
+          <OperacaoPendente token={token} />
           <Routes>
             <Route path="/" element={<Layout role={role} token={token} onLogout={sair} />}>
               <Route index element={role === 'ADMIN' ? <Hub token={token} /> : <Navigate to="/produtos" replace />} />

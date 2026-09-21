@@ -1,30 +1,39 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, ShoppingCart, PackageSearch, Tag, X, FileText } from 'lucide-react'
-import API_URL from '../config/api'
+import { Search, ShoppingCart, PackageSearch, Tag, X } from 'lucide-react'
+import API_URL, { apiFetch as fetch } from '../config/api'
+import { enviarMovimentacao } from '../config/api'
+import useOperacao from '../hooks/useOperacao'
 
 function Produtos({ token }) {
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState('')
+  const { enviando, executar } = useOperacao()
   
   const [busca, setBusca] = useState('')
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('Todas')
   
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [modalAberto, setModalAberto] = useState(false)
-  const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', gerarNota: false })
+  const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
 
   const recarregarProdutos = useCallback(() => {
     setCarregando(true)
+    setErroCarga('')
     fetch(API_URL + '/produtos', {
       headers: { 'Authorization': `Bearer ${token}` }
     })
-    .then(res => res.ok ? res.json() : [])
+    .then(res => res.json())
     .then(data => setProdutos(data))
-    .catch(err => console.log(err))
+    .catch(err => setErroCarga(err.message))
     .finally(() => setCarregando(false))
   }, [token])
   
   useEffect(() => { recarregarProdutos() }, [recarregarProdutos])
+  useEffect(() => {
+    window.addEventListener('estoque-alterado', recarregarProdutos)
+    return () => window.removeEventListener('estoque-alterado', recarregarProdutos)
+  }, [recarregarProdutos])
 
   const categorias = ['Todas', ...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean)), 'Sem Categoria']
 
@@ -37,36 +46,27 @@ function Produtos({ token }) {
 
   function abrirModalVender(produto) {
     setProdutoSelecionado(produto)
-    setFormVender({ quantidade: 1, precoVenda: produto.preco, gerarNota: false })
+    setFormVender({ quantidade: 1, precoVenda: produto.preco })
     setModalAberto(true)
   }
 
   function handleVender() {
-    const qtd = parseInt(formVender.quantidade)
+    const qtd = Number(formVender.quantidade)
     const preco = parseFloat(formVender.precoVenda)
 
-    if (!qtd || !preco || qtd <= 0 || preco <= 0) {
+    if (!Number.isSafeInteger(qtd) || !preco || qtd <= 0 || preco <= 0) {
       alert("Preencha quantidade e preço corretamente.")
       return
     }
 
-    fetch(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ quantidade: qtd, preco })
+    executar(async () => {
+      await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { quantidade: qtd, preco }, token)
+      setModalAberto(false)
+      alert('Venda registrada com sucesso!')
     })
-    .then(res => {
-      if (res.ok) {
-        setModalAberto(false)
-        recarregarProdutos()
-        if (formVender.gerarNota) alert("✅ Venda registrada e Nota solicitada!")
-        else alert("✅ Venda registrada com sucesso!")
-      } else {
-        alert("❌ Erro ao vender produto.")
-      }
-    })
-    .catch(() => alert("❌ Erro ao vender produto."))
   }
+
+  if (erroCarga) return <div role="alert" className="glass-panel p-6 space-y-4"><p>{erroCarga}</p><button className="btn-primary p-3" onClick={recarregarProdutos}>Tentar carregar novamente</button></div>
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
@@ -160,7 +160,7 @@ function Produtos({ token }) {
             
             <div className="flex justify-between items-center p-6 border-b border-current/10 opacity-90">
               <h2 className="text-sm font-bold uppercase tracking-widest">Registrar Venda</h2>
-              <button onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors cursor-pointer">
+              <button disabled={enviando} onClick={() => setModalAberto(false)} className="opacity-50 hover:opacity-100 transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
@@ -191,28 +191,14 @@ function Produtos({ token }) {
                 />
               </div>
 
-              <div className="pt-2">
-                <label className="flex items-center gap-4 p-4 border border-current/20 rounded-sm cursor-pointer hover:bg-current/5 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    checked={formVender.gerarNota}
-                    onChange={e => setFormVender({...formVender, gerarNota: e.target.checked})}
-                    className="w-5 h-5 accent-current cursor-pointer"
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 opacity-90">
-                      <FileText size={14} className="opacity-50" /> Emitir Recibo
-                    </span>
-                  </div>
-                </label>
-              </div>
+
             </div>
 
             <div className="p-6 border-t border-current/10 bg-current/5 flex justify-end gap-3">
-              <button onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
+              <button disabled={enviando} onClick={() => setModalAberto(false)} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest">
                 Cancelar
               </button>
-              <button onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+              <button disabled={enviando} onClick={handleVender} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
                 <ShoppingCart size={14} /> Confirmar
               </button>
             </div>

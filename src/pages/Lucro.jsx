@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import API_URL from '../config/api'
+import API_URL, { apiFetch as fetch } from '../config/api'
 import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt, BadgeDollarSign } from 'lucide-react'
 
 function Lucro({ token }) {
   const [movimentacoes, setMovimentacoes] = useState([])
   const [fluxo, setFluxo] = useState({ totalEntradas: 0, totalSaidas: 0, saldoLiquido: 0 })
   const [carregando, setCarregando] = useState(true)
+  const [erroCarga, setErroCarga] = useState('')
 
   useEffect(() => {
     const apiUrl = API_URL
@@ -37,7 +38,7 @@ function Lucro({ token }) {
       setCarregando(false)
     })
     .catch(err => {
-      console.log('Erro ao carregar dados:', err)
+      setErroCarga(err.message)
       setCarregando(false)
     })
   }, [token])
@@ -50,6 +51,8 @@ function Lucro({ token }) {
     .reduce((total, mov) => total + mov.lucro, 0)
 
   const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  if (erroCarga) return <div role="alert" className="glass-panel p-6"><p>{erroCarga}</p><button className="btn-primary p-3 mt-4" onClick={() => window.location.reload()}>Tentar novamente</button></div>
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
@@ -92,7 +95,7 @@ function Lucro({ token }) {
 
             <div className="glass-panel p-6 flex flex-col justify-between relative overflow-hidden border-l-2 border-current">
               <div className="flex items-center justify-between mb-6 opacity-60">
-                <p className="text-[10px] uppercase tracking-widest font-bold">Saldo Líquido</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold">Saldo de vendas e reposições</p>
                 <Wallet size={16} />
               </div>
               <h2 className={`text-3xl font-mono font-light tracking-tighter ${saldo >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -102,7 +105,7 @@ function Lucro({ token }) {
 
             <div className="glass-panel p-6 flex flex-col justify-between border-l-2 border-sky-500/60">
               <div className="flex items-center justify-between mb-6 opacity-60">
-                <p className="text-[10px] uppercase tracking-widest font-bold">Lucro Real nas Vendas</p>
+                <p className="text-[10px] uppercase tracking-widest font-bold">Lucro bruto das vendas</p>
                 <BadgeDollarSign size={16} />
               </div>
               <h2 className={`text-3xl font-mono font-light tracking-tighter ${lucroReal >= 0 ? 'text-sky-500' : 'text-rose-500'}`}>
@@ -113,6 +116,7 @@ function Lucro({ token }) {
           </div>
 
           <div className="glass-panel p-6 mt-6">
+            <p className="text-sm opacity-70 mb-4">Lucro bruto considera venda menos custo das mercadorias. Despesas, taxas e estoque inicial não são pagamentos registrados neste caixa.</p>
             <div className="flex justify-between items-center mb-4 opacity-70">
               <span className="font-bold text-[10px] uppercase tracking-widest">Proporção Operacional</span>
             </div>
