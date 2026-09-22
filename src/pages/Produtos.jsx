@@ -3,8 +3,9 @@ import { Search, ShoppingCart, PackageSearch, Tag, X } from 'lucide-react'
 import API_URL, { apiFetch as fetch } from '../config/api'
 import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
+import { imagemProdutoUrl } from '../utils/cloudinary'
 
-function Produtos({ token }) {
+function Produtos({ token, loja }) {
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
@@ -52,10 +53,10 @@ function Produtos({ token }) {
 
   function handleVender() {
     const qtd = Number(formVender.quantidade)
-    const preco = parseFloat(formVender.precoVenda)
+    const preco = loja?.financeiroAtivo ? parseFloat(formVender.precoVenda) : 0
 
-    if (!Number.isSafeInteger(qtd) || !preco || qtd <= 0 || preco <= 0) {
-      alert("Preencha quantidade e preço corretamente.")
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (loja?.financeiroAtivo && (!preco || preco <= 0))) {
+      alert(loja?.financeiroAtivo ? 'Preencha quantidade e preço corretamente.' : 'Preencha uma quantidade válida.')
       return
     }
 
@@ -73,8 +74,8 @@ function Produtos({ token }) {
       
       <header className="flex justify-between items-end border-b border-current pb-4 opacity-90">
         <div>
-          <h1 className="text-2xl font-bold tracking-widest uppercase">Frente de Caixa</h1>
-          <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">Venda Rápida • Catálogo</p>
+          <h1 className="text-2xl font-bold tracking-widest uppercase">Catálogo</h1>
+          <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">{loja?.financeiroAtivo ? 'Venda rápida • Estoque' : 'Saída rápida • Estoque'}</p>
         </div>
       </header>
 
@@ -125,6 +126,7 @@ function Produtos({ token }) {
               onClick={() => abrirModalVender(p)}
               className="glass-panel p-5 flex flex-col h-full hover:border-current/50 transition-all cursor-pointer group relative overflow-hidden"
             >
+              {loja?.fotosAtivas && p.imagemUrl && <img src={imagemProdutoUrl(p.imagemUrl)} alt={`Foto de ${p.nome}`} className="w-full h-36 object-cover mb-4 border border-current/10" loading="lazy" />}
               <div className="flex justify-between items-start mb-4">
                 <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
                   {p.categoria?.nome || 'Sem Categoria'}
@@ -137,12 +139,13 @@ function Produtos({ token }) {
               <h3 className="font-bold text-lg leading-tight mb-6 flex-1 group-hover:opacity-70 transition-opacity uppercase tracking-wider">
                 {p.nome}
               </h3>
+              {p.descricao && <p className="text-xs opacity-55 line-clamp-2 mb-4">{p.descricao}</p>}
 
               <div className="flex items-center justify-between mt-auto pt-4 border-t border-current/10">
-                <div className="flex flex-col">
+                {loja?.financeiroAtivo && <div className="flex flex-col">
                   <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">Preço Un.</span>
                   <span className="font-mono font-light text-xl opacity-90">R$ {p.preco?.toFixed(2)}</span>
-                </div>
+                </div>}
                 
                 <div className="border border-current/20 p-2.5 rounded-sm group-hover:bg-current group-hover:text-[var(--bg-color)] transition-colors">
                   <ShoppingCart size={18} />
@@ -182,13 +185,13 @@ function Produtos({ token }) {
               </div>
               
               <div>
-                <label className="block text-[10px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço Unitário (R$)</label>
+                {loja?.financeiroAtivo && <><label className="block text-[10px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço Unitário (R$)</label>
                 <input 
                   value={formVender.precoVenda} 
                   onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} 
                   type="number" step="0.01" 
                   className="w-full p-3 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono text-lg transition-all" 
-                />
+                /></>}
               </div>
 
 

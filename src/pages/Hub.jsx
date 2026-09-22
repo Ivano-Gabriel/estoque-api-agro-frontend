@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import API_URL, { apiFetch as fetch } from '../config/api'
 
-function Hub({ token }) {
+function Hub({ token, loja }) {
   // Começa tudo zerado. Se ficar zerado, a API não está respondendo.
   const [stats, setStats] = useState({
     ativos: 0,
@@ -57,8 +57,8 @@ function Hub({ token }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="glass-panel p-5 flex flex-col justify-between group">
+          <div className={`grid grid-cols-1 ${loja?.financeiroAtivo ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-4`}>
+            {loja?.financeiroAtivo && <div className="glass-panel p-5 flex flex-col justify-between group">
               <div className="flex justify-between items-start mb-6">
                 <PackageSearch size={18} className="opacity-40 group-hover:opacity-100 transition-opacity" />
                 <span className="text-[10px] opacity-40 uppercase tracking-widest font-bold">Volume</span>
@@ -67,7 +67,7 @@ function Hub({ token }) {
                 <p className="text-4xl font-light font-mono tracking-tighter opacity-90">{stats.ativos}</p>
                 <h3 className="opacity-50 text-[10px] font-bold uppercase tracking-widest mt-2">Produtos Ativos</h3>
               </div>
-            </div>
+            </div>}
 
             <div className="glass-panel !border-l-rose-600 p-5 flex flex-col justify-between group">
               <div className="flex justify-between items-start mb-6">
@@ -100,8 +100,8 @@ function Hub({ token }) {
             
             <div className="glass-panel p-6 lg:col-span-3 flex flex-col justify-center gap-3">
               <h2 className="font-bold">Resumo do estoque atual</h2>
-              <p className="text-sm opacity-70">O valor exibido considera os preços de venda. Não representa dinheiro em caixa nem lucro.</p>
-              <Link to="/lucro" className="underline text-sm">Conferir movimentações e lucro bruto</Link>
+              <p className="text-sm opacity-70">Acompanhe produtos ativos, estoque crítico e movimentações da loja.</p>
+              {loja?.financeiroAtivo && <Link to="/lucro" className="underline text-sm">Conferir movimentações e lucro bruto</Link>}
             </div>
 
             <div className="flex flex-col gap-4">

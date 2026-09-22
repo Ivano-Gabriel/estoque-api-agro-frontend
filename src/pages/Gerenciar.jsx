@@ -3,8 +3,10 @@ import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, La
 import API_URL, { apiFetch as fetch } from '../config/api'
 import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
+import ImagemProdutoUpload from '../components/ImagemProdutoUpload'
 
-function Gerenciar({ token, role }) {
+function Gerenciar({ token, role, loja }) {
+  const financeiroAtivo = loja?.financeiroAtivo !== false
   const [produtos, setProdutos] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
@@ -17,7 +19,7 @@ function Gerenciar({ token, role }) {
   const [modoModal, setModoModal] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
 
-  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '' })
+  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
   const [modalImportacao, setModalImportacao] = useState(false)
@@ -52,12 +54,12 @@ function Gerenciar({ token, role }) {
   // Funções de abrir modal omitidas por espaço (são iguais às originais)
   function abrirModalNovo() {
     setProdutoSelecionado(null); setModoModal('novo');
-    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '' })
+    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '' })
     setModalAberto(true)
   }
   function abrirModalEditar(produto) {
     setProdutoSelecionado(produto); setModoModal('editar');
-    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE', dataValidade: produto.dataValidade || '' })
+    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE', dataValidade: produto.dataValidade || '', descricao: produto.descricao || '', imagemUrl: produto.imagemUrl || '' })
     setModalAberto(true)
   }
   function abrirModalRepor(produto) {
@@ -75,17 +77,19 @@ function Gerenciar({ token, role }) {
     const editando = Boolean(produtoSelecionado?.id)
     const quantidade = editando ? produtoSelecionado.quantidadeEstoque : Number(form.quantidade || '0')
     const custoUnitario = editando ? null : parseFloat(form.custo || '0')
-    if (!form.nome.trim() || !form.preco || !Number.isSafeInteger(quantidade) || quantidade < 0) return alert('Preencha os dados obrigatórios.')
-    if (!editando && quantidade > 0 && custoUnitario <= 0) return alert('Informe o custo do estoque inicial.')
+    if (!form.nome.trim() || !Number.isSafeInteger(quantidade) || quantidade < 0 || (financeiroAtivo && !form.preco)) return alert('Preencha os dados obrigatórios.')
+    if (financeiroAtivo && !editando && quantidade > 0 && custoUnitario <= 0) return alert('Informe o custo do estoque inicial.')
 
     const obj = {
       nome: form.nome,
-      preco: parseFloat(form.preco),
-      custoUnitario,
+      preco: financeiroAtivo ? parseFloat(form.preco) : 0,
+      custoUnitario: financeiroAtivo ? custoUnitario : 0,
       quantidadeEstoque: quantidade,
       tipo: form.tipo,
       dataValidade: form.dataValidade || produtoSelecionado?.dataValidade || null,
-      categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria }
+      categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria },
+      descricao: form.descricao || null,
+      imagemUrl: loja?.fotosAtivas ? (form.imagemUrl || null) : null,
     }
     const url = editando ? `${API_URL}/produtos/${produtoSelecionado.id}` : `${API_URL}/produtos`
     executar(async () => {
@@ -100,16 +104,16 @@ function Gerenciar({ token, role }) {
     })
   }
   function handleRepor() {
-    const qtd = Number(formRepor.quantidade); const custo = Number(formRepor.precoCusto);
-    if (!Number.isSafeInteger(qtd) || qtd <= 0 || custo <= 0) return alert('Informe quantidade inteira e custo positivo.')
+    const qtd = Number(formRepor.quantidade); const custo = financeiroAtivo ? Number(formRepor.precoCusto) : 0;
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && custo <= 0)) return alert(financeiroAtivo ? 'Informe quantidade inteira e custo positivo.' : 'Informe uma quantidade válida.')
     executar(async () => {
       await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { quantidade: qtd, preco: custo }, token)
       setModalAberto(false)
     })
   }
   function handleVender() {
-    const qtd = Number(formVender.quantidade); const preco = Number(formVender.precoVenda);
-    if (!Number.isSafeInteger(qtd) || qtd <= 0 || preco <= 0) return alert('Informe quantidade inteira e preço positivo.')
+    const qtd = Number(formVender.quantidade); const preco = financeiroAtivo ? Number(formVender.precoVenda) : 0;
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && preco <= 0)) return alert(financeiroAtivo ? 'Informe quantidade inteira e preço positivo.' : 'Informe uma quantidade válida.')
     executar(async () => {
       await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { quantidade: qtd, preco }, token)
       setModalAberto(false)
@@ -244,7 +248,7 @@ function Gerenciar({ token, role }) {
                   <tr className="bg-current/5 border-b border-current/10 opacity-70 text-[9px] uppercase tracking-widest font-bold">
                     <th className="px-6 py-4">Produto</th>
                     <th className="px-6 py-4">Categoria</th>
-                    <th className="px-6 py-4">Varejo</th>
+                    {financeiroAtivo && <th className="px-6 py-4">Varejo</th>}
                     <th className="px-6 py-4">Volume</th>
                     <th className="px-6 py-4 text-right">Ação</th>
                   </tr>
@@ -261,9 +265,9 @@ function Gerenciar({ token, role }) {
                           <Tag size={10} /> {p.categoria?.nome || 'S/ CAT'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      {financeiroAtivo && <td className="px-6 py-4">
                         <div className="font-mono text-sm opacity-90">R$ {p.preco?.toFixed(2)}</div>
-                      </td>
+                      </td>}
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 border rounded-sm text-[10px] font-bold uppercase tracking-widest ${
                           p.quantidadeEstoque <= 5 ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
@@ -304,7 +308,7 @@ function Gerenciar({ token, role }) {
                     <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest opacity-60">
                       <Tag size={10} /> {p.categoria?.nome || 'S/ CAT'}
                     </span>
-                    <div className="font-mono text-base font-light opacity-90">R$ {p.preco?.toFixed(2)}</div>
+                    {financeiroAtivo && <div className="font-mono text-base font-light opacity-90">R$ {p.preco?.toFixed(2)}</div>}
                   </div>
 
                   {/* Linha 3: Botões de Ação Grandes e Fáceis de Clicar com o dedo */}
@@ -436,15 +440,20 @@ function Gerenciar({ token, role }) {
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Identificação</label>
                     <input value={form.nome} onChange={e => setForm({...form, nome: e.target.value})} className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all text-sm font-bold uppercase tracking-wider" />
                   </div>
+                  <div>
+                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Descrição breve</label>
+                    <textarea maxLength="500" rows="3" value={form.descricao} onChange={e => setForm({...form, descricao: e.target.value})} className="control-field w-full p-2.5" placeholder="Cor, tamanho, marca ou detalhe importante" />
+                  </div>
+                  {loja?.fotosAtivas && <ImagemProdutoUpload value={form.imagemUrl} onChange={imagemUrl => setForm({...form, imagemUrl})} token={token} />}
                   <label className="block text-xs">
                     Validade (opcional; em branco mantém a data existente)
                     <input type="date" value={form.dataValidade || ''} onChange={e => setForm({...form, dataValidade: e.target.value})} className="control-field w-full p-2.5 mt-2" />
                   </label>
                   <div className="flex gap-4">
-                    <div className="flex-1">
+                    {financeiroAtivo && <div className="flex-1">
                       <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Varejo (R$)</label>
                       <input value={form.preco} onChange={e => setForm({...form, preco: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
-                    </div>
+                    </div>}
                     {modoModal === 'novo' && (
                       <div className="flex-1">
                         <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Estoque Inicial</label>
@@ -452,7 +461,7 @@ function Gerenciar({ token, role }) {
                       </div>
                     )}
                   </div>
-                  {modoModal === 'novo' && (
+                  {financeiroAtivo && modoModal === 'novo' && (
                     <div>
                       <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Custo Unitário Inicial (R$)</label>
                       <input value={form.custo} onChange={e => setForm({...form, custo: e.target.value})} type="number" min="0" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
@@ -484,10 +493,10 @@ function Gerenciar({ token, role }) {
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Carga (UN)</label>
                     <input value={formRepor.quantidade} onChange={e => setFormRepor({...formRepor, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>
-                  <div>
+                  {financeiroAtivo && <div>
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Custo Base (R$)</label>
                     <input value={formRepor.precoCusto} onChange={e => setFormRepor({...formRepor, precoCusto: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
-                  </div>
+                  </div>}
                 </div>
               )}
 
@@ -501,10 +510,10 @@ function Gerenciar({ token, role }) {
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Baixa (UN)</label>
                     <input value={formVender.quantidade} onChange={e => setFormVender({...formVender, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>
-                  <div>
+                  {financeiroAtivo && <div>
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Valor de Saída (R$)</label>
                     <input value={formVender.precoVenda} onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
-                  </div>
+                  </div>}
                 </div>
               )}
 

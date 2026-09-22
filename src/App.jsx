@@ -9,10 +9,14 @@ import Gerenciar from './pages/Gerenciar'
 import Lucro from './pages/Lucro'
 import Configuracoes from './pages/Configuracoes'
 import OperacaoPendente from './components/OperacaoPendente'
+import Plataforma from './pages/Plataforma'
 
 function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('accessToken'))
   const [role, setRole] = useState(() => sessionStorage.getItem('userRole'))
+  const [loja, setLoja] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('userStore')) } catch { return null }
+  })
   const [online, setOnline] = useState(() => navigator.onLine)
   const [avisoSessao, setAvisoSessao] = useState('')
 
@@ -21,8 +25,10 @@ function App() {
       if (event?.detail && event.detail !== `Bearer ${token}`) return
       sessionStorage.removeItem('accessToken')
       sessionStorage.removeItem('userRole')
+      sessionStorage.removeItem('userStore')
       setToken(null)
       setRole(null)
+      setLoja(null)
       setAvisoSessao('Sua sessão terminou. Entre novamente para continuar.')
     }
     window.addEventListener('sessao-expirada', expirar)
@@ -53,16 +59,20 @@ function App() {
     sessionStorage.setItem('accessToken', sessao.token)
     sessionStorage.setItem('userRole', sessao.role)
     sessionStorage.setItem('userEmail', sessao.email)
+    sessionStorage.setItem('userStore', JSON.stringify(sessao.loja))
     setToken(sessao.token)
     setRole(sessao.role)
+    setLoja(sessao.loja)
   }
 
   function sair() {
     sessionStorage.removeItem('accessToken')
     sessionStorage.removeItem('userRole')
     sessionStorage.removeItem('userEmail')
+    sessionStorage.removeItem('userStore')
     setToken(null)
     setRole(null)
+    setLoja(null)
   }
 
   return (
@@ -75,15 +85,17 @@ function App() {
 
       {!token ? (
         <Login onLogin={entrar} aviso={avisoSessao} />
+      ) : role === 'SUPER_ADMIN' ? (
+        <Plataforma token={token} onLogout={sair} />
       ) : (
         <BrowserRouter>
           <OperacaoPendente token={token} />
           <Routes>
-            <Route path="/" element={<Layout role={role} token={token} onLogout={sair} />}>
-              <Route index element={role === 'ADMIN' ? <Hub token={token} /> : <Navigate to="/produtos" replace />} />
-              <Route path="produtos" element={<Produtos token={token} />} />
-              <Route path="gerenciar" element={<Gerenciar token={token} role={role} />} />
-              <Route path="lucro" element={role === 'ADMIN' ? <Lucro token={token} /> : <Navigate to="/produtos" replace />} />
+            <Route path="/" element={<Layout role={role} loja={loja} token={token} onLogout={sair} />}>
+              <Route index element={role === 'ADMIN' ? <Hub token={token} loja={loja} /> : <Navigate to="/produtos" replace />} />
+              <Route path="produtos" element={<Produtos token={token} loja={loja} />} />
+              <Route path="gerenciar" element={<Gerenciar token={token} role={role} loja={loja} />} />
+              <Route path="lucro" element={role === 'ADMIN' && loja?.financeiroAtivo ? <Lucro token={token} /> : <Navigate to="/produtos" replace />} />
               <Route path="config" element={<Configuracoes token={token} role={role} />} />
               <Route path="*" element={<Navigate to={role === 'ADMIN' ? '/' : '/produtos'} replace />} />
             </Route>
