@@ -3,7 +3,7 @@ import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, Pen
 import { useState } from 'react'
 import RelatorioWhatsapp from './RelatorioWhatsapp'
 
-function Layout({ role, token, onLogout }) {
+function Layout({ role, loja, token, onLogout }) {
   const location = useLocation()
   const [menuAberto, setMenuAberto] = useState(false)
 
@@ -13,7 +13,7 @@ function Layout({ role, token, onLogout }) {
     { name: 'Gerenciar', path: '/gerenciar', icon: PenTool },
     { name: 'Caixa', path: '/lucro', icon: DollarSign, adminOnly: true },
     { name: 'Ajustes', path: '/config', icon: Settings },
-  ].filter(item => !item.adminOnly || role === 'ADMIN')
+  ].filter(item => (!item.adminOnly || role === 'ADMIN') && (item.path !== '/lucro' || loja?.financeiroAtivo))
 
   const LogoI = () => (
     <div className="flex items-center justify-center w-7 h-7 border border-current bg-current/5 font-extrabold text-sm tracking-tighter">
@@ -36,7 +36,7 @@ function Layout({ role, token, onLogout }) {
             <div className="flex items-center justify-center lg:justify-start gap-3 px-2 mb-12">
               <LogoI />
               <h1 className="hidden lg:block text-lg font-bold tracking-[0.2em] uppercase mt-1">
-                ESTOQUE
+                {loja?.nome || 'ESTOQUE'}
               </h1>
             </div>
 
@@ -75,7 +75,7 @@ function Layout({ role, token, onLogout }) {
           <div className="md:hidden flex justify-between items-center mb-6 glass-panel p-4 !border-l-0 relative">
             <div className="flex items-center gap-3">
               <LogoI />
-              <span className="font-bold tracking-[0.2em] uppercase text-xs mt-1">ESTOQUE</span>
+              <span className="font-bold tracking-[0.12em] uppercase text-xs mt-1">{loja?.nome || 'ESTOQUE'}</span>
             </div>
             
             <button 
