@@ -89,7 +89,7 @@ function Gerenciar({ token, role, loja }) {
       dataValidade: form.dataValidade || produtoSelecionado?.dataValidade || null,
       categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria },
       descricao: form.descricao || null,
-      imagemUrl: form.imagemUrl || null,
+      imagemUrl: loja?.fotosAtivas ? (form.imagemUrl || null) : null,
     }
     const url = editando ? `${API_URL}/produtos/${produtoSelecionado.id}` : `${API_URL}/produtos`
     executar(async () => {
@@ -444,7 +444,7 @@ function Gerenciar({ token, role, loja }) {
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Descrição breve</label>
                     <textarea maxLength="500" rows="3" value={form.descricao} onChange={e => setForm({...form, descricao: e.target.value})} className="control-field w-full p-2.5" placeholder="Cor, tamanho, marca ou detalhe importante" />
                   </div>
-                  <ImagemProdutoUpload value={form.imagemUrl} onChange={imagemUrl => setForm({...form, imagemUrl})} lojaSlug={loja?.slug} />
+                  {loja?.fotosAtivas && <ImagemProdutoUpload value={form.imagemUrl} onChange={imagemUrl => setForm({...form, imagemUrl})} token={token} />}
                   <label className="block text-xs">
                     Validade (opcional; em branco mantém a data existente)
                     <input type="date" value={form.dataValidade || ''} onChange={e => setForm({...form, dataValidade: e.target.value})} className="control-field w-full p-2.5 mt-2" />

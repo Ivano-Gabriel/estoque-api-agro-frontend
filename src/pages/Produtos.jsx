@@ -3,6 +3,7 @@ import { Search, ShoppingCart, PackageSearch, Tag, X } from 'lucide-react'
 import API_URL, { apiFetch as fetch } from '../config/api'
 import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
+import { imagemProdutoUrl } from '../utils/cloudinary'
 
 function Produtos({ token, loja }) {
   const [produtos, setProdutos] = useState([])
@@ -125,7 +126,7 @@ function Produtos({ token, loja }) {
               onClick={() => abrirModalVender(p)}
               className="glass-panel p-5 flex flex-col h-full hover:border-current/50 transition-all cursor-pointer group relative overflow-hidden"
             >
-              {p.imagemUrl && <img src={p.imagemUrl} alt="" className="w-full h-36 object-cover mb-4 border border-current/10" loading="lazy" />}
+              {loja?.fotosAtivas && p.imagemUrl && <img src={imagemProdutoUrl(p.imagemUrl)} alt={`Foto de ${p.nome}`} className="w-full h-36 object-cover mb-4 border border-current/10" loading="lazy" />}
               <div className="flex justify-between items-start mb-4">
                 <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
                   {p.categoria?.nome || 'Sem Categoria'}

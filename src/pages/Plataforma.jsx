@@ -6,7 +6,7 @@ function Plataforma({ token, onLogout }) {
   const [lojas, setLojas] = useState([])
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
-  const [form, setForm] = useState({ nome: '', slug: '', financeiroAtivo: false, whatsapp: '', adminEmail: '', adminSenha: '' })
+  const [form, setForm] = useState({ nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, whatsapp: '', adminEmail: '', adminSenha: '' })
 
   const carregar = useCallback(async () => {
     try {
@@ -25,7 +25,7 @@ function Plataforma({ token, onLogout }) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      setForm({ nome: '', slug: '', financeiroAtivo: false, whatsapp: '', adminEmail: '', adminSenha: '' })
+      setForm({ nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, whatsapp: '', adminEmail: '', adminSenha: '' })
       await carregar()
     } catch (e) { setErro(e.message) } finally { setSalvando(false) }
   }
@@ -54,6 +54,7 @@ function Plataforma({ token, onLogout }) {
           <input required type="email" className="control-field w-full p-3" placeholder="E-mail da administradora" value={form.adminEmail} onChange={e => setForm({...form, adminEmail:e.target.value})}/>
           <input required minLength="10" maxLength="72" type="password" className="control-field w-full p-3" placeholder="Senha inicial" value={form.adminSenha} onChange={e => setForm({...form, adminSenha:e.target.value})}/>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.financeiroAtivo} onChange={e => setForm({...form, financeiroAtivo:e.target.checked})}/> Ativar módulo financeiro</label>
+          <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.fotosAtivas} onChange={e => setForm({...form, fotosAtivas:e.target.checked})}/> Ativar fotos de produtos</label>
           {erro && <p role="alert" className="text-rose-500 text-sm">{erro}</p>}
           <button disabled={salvando} className="btn-primary w-full p-3 font-bold uppercase tracking-widest">{salvando ? 'Criando...' : 'Criar loja'}</button>
         </form>
@@ -63,13 +64,14 @@ function Plataforma({ token, onLogout }) {
           {lojas.map(loja => <div key={loja.id} className="border border-current/15 p-4 space-y-3">
             <div className="flex justify-between gap-3">
             <div><strong>{loja.nome}</strong><p className="text-xs opacity-50">{loja.slug}</p></div>
-            <div className="text-right text-xs"><p>{loja.ativa ? 'Ativa' : 'Bloqueada'}</p><p className="opacity-50">{loja.financeiroAtivo ? 'Com financeiro' : 'Sem financeiro'}</p></div>
+            <div className="text-right text-xs"><p>{loja.ativa ? 'Ativa' : 'Bloqueada'}</p><p className="opacity-50">{loja.financeiroAtivo ? 'Com financeiro' : 'Sem financeiro'}</p><p className="opacity-50">{loja.fotosAtivas ? 'Com fotos' : 'Sem fotos'}</p></div>
             </div>
             <div className="flex flex-wrap gap-2 text-[10px] uppercase font-bold tracking-wider">
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/status`, { ativa: !loja.ativa })}>{loja.ativa ? 'Bloquear' : 'Reativar'}</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: !loja.financeiroAtivo, whatsapp: loja.whatsapp })}>{loja.financeiroAtivo ? 'Desligar financeiro' : 'Ligar financeiro'}</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => { const numero = window.prompt('WhatsApp com DDI e DDD:', loja.whatsapp || ''); if (numero !== null) atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: loja.financeiroAtivo, whatsapp: numero }) }}>Alterar WhatsApp</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => { const nome = window.prompt('Nome da loja:', loja.nome); if (nome) atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome, financeiroAtivo: loja.financeiroAtivo, whatsapp: loja.whatsapp }) }}>Renomear</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: !loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, whatsapp: loja.whatsapp })}>{loja.financeiroAtivo ? 'Desligar financeiro' : 'Ligar financeiro'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: !loja.fotosAtivas, whatsapp: loja.whatsapp })}>{loja.fotosAtivas ? 'Desligar fotos' : 'Ligar fotos'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => { const numero = window.prompt('WhatsApp com DDI e DDD:', loja.whatsapp || ''); if (numero !== null) atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, whatsapp: numero }) }}>Alterar WhatsApp</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => { const nome = window.prompt('Nome da loja:', loja.nome); if (nome) atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, whatsapp: loja.whatsapp }) }}>Renomear</button>
             </div>
           </div>)}
         </div>
