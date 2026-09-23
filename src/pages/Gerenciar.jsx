@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, Layers, Search, Filter, Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Plus, X, ShoppingCart, TrendingUp, Edit, Trash2, PackageSearch, Tag, Layers, Search, Filter, Upload, Download, FileSpreadsheet, AlertTriangle, CheckCircle2, ListPlus } from 'lucide-react'
 import API_URL, { apiFetch as fetch } from '../config/api'
 import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
 import ImagemProdutoUpload from '../components/ImagemProdutoUpload'
+import CadastroRapidoProdutos from '../components/CadastroRapidoProdutos'
 
 function Gerenciar({ token, role, loja }) {
   const financeiroAtivo = loja?.financeiroAtivo !== false
@@ -26,6 +27,7 @@ function Gerenciar({ token, role, loja }) {
   const [arquivoImportacao, setArquivoImportacao] = useState(null)
   const [importando, setImportando] = useState(false)
   const [resultadoImportacao, setResultadoImportacao] = useState(null)
+  const [cadastroRapidoAberto, setCadastroRapidoAberto] = useState(false)
 
   const carregarProdutos = useCallback(() => {
     setCarregando(true)
@@ -194,12 +196,17 @@ function Gerenciar({ token, role, loja }) {
         </div>
         <div className="flex flex-wrap gap-2">
           {role === 'ADMIN' && (
-            <button onClick={abrirImportacao} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
-              <Upload size={14} /> Importar Excel
-            </button>
+            <>
+              <button onClick={() => setCadastroRapidoAberto(true)} className="btn-primary px-5 py-2.5 rounded-sm font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+                <ListPlus size={15} /> Cadastro rápido
+              </button>
+              <button onClick={abrirImportacao} className="btn-secondary px-5 py-2.5 rounded-sm font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+                <Upload size={14} /> Importar Excel
+              </button>
+            </>
           )}
-          <button onClick={abrirModalNovo} className="btn-primary px-6 py-2.5 rounded-sm font-bold text-xs tracking-widest uppercase flex items-center gap-2">
-            <Plus size={14} /> Registro
+          <button onClick={abrirModalNovo} className="btn-secondary px-6 py-2.5 rounded-sm font-bold text-xs tracking-widest uppercase flex items-center gap-2">
+            <Plus size={14} /> Um produto
           </button>
         </div>
       </header>
@@ -248,8 +255,8 @@ function Gerenciar({ token, role, loja }) {
                   <tr className="bg-current/5 border-b border-current/10 opacity-70 text-[9px] uppercase tracking-widest font-bold">
                     <th className="px-6 py-4">Produto</th>
                     <th className="px-6 py-4">Categoria</th>
-                    {financeiroAtivo && <th className="px-6 py-4">Varejo</th>}
-                    <th className="px-6 py-4">Volume</th>
+                    {financeiroAtivo && <th className="px-6 py-4">Preço de venda</th>}
+                    <th className="px-6 py-4">Em estoque</th>
                     <th className="px-6 py-4 text-right">Ação</th>
                   </tr>
                 </thead>
@@ -332,6 +339,16 @@ function Gerenciar({ token, role, loja }) {
           </>
         )}
       </div>
+
+      {cadastroRapidoAberto && (
+        <CadastroRapidoProdutos
+          token={token}
+          financeiroAtivo={financeiroAtivo}
+          categorias={categoriasExistentes}
+          onClose={() => setCadastroRapidoAberto(false)}
+          onSuccess={carregarProdutos}
+        />
+      )}
 
       {modalImportacao && (
         <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-black/80 backdrop-blur-md">
@@ -451,7 +468,7 @@ function Gerenciar({ token, role, loja }) {
                   </label>
                   <div className="flex gap-4">
                     {financeiroAtivo && <div className="flex-1">
-                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Varejo (R$)</label>
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço de venda — quanto será cobrado (R$)</label>
                       <input value={form.preco} onChange={e => setForm({...form, preco: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
                     </div>}
                     {modoModal === 'novo' && (
@@ -463,13 +480,13 @@ function Gerenciar({ token, role, loja }) {
                   </div>
                   {financeiroAtivo && modoModal === 'novo' && (
                     <div>
-                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Custo Unitário Inicial (R$)</label>
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço de compra — quanto você pagou (R$)</label>
                       <input value={form.custo} onChange={e => setForm({...form, custo: e.target.value})} type="number" min="0" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all font-mono" />
                     </div>
                   )}
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Setor</label>
+                      <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Categoria</label>
                       <select value={form.categoria} onChange={e => setForm({...form, categoria: e.target.value})} className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current transition-all text-xs font-bold uppercase tracking-widest [&>option]:bg-[var(--bg-color)]">
                         <option value="" disabled>---</option>
                         {categoriasExistentes.map(cat => <option key={cat} value={cat}>{cat}</option>)}

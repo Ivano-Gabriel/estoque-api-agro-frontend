@@ -10,8 +10,10 @@ export async function apiFetch(url, options = {}) {
     if (response.status === 401 && !url.endsWith('/auth/login')) {
       window.dispatchEvent(new CustomEvent('sessao-expirada', { detail: options.headers?.Authorization }))
     }
-    // A importação usa 422 para devolver os erros por linha.
-    if (!response.ok && !(response.status === 422 && url.endsWith('/produtos/importacao'))) {
+    // Importações em lote usam 422 para devolver os erros por linha.
+    const respostaComErrosPorLinha = response.status === 422
+      && (url.endsWith('/produtos/importacao') || url.endsWith('/produtos/cadastro-em-massa'))
+    if (!response.ok && !respostaComErrosPorLinha) {
       const text = await response.text()
       let mensagem
       try { mensagem = JSON.parse(text).erro } catch { /* pode ser texto simples */ }

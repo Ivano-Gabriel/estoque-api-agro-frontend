@@ -34,7 +34,7 @@ function ImagemProdutoUpload({ value, onChange, token }) {
 
   return <div className="space-y-2">
     <span className="block text-[9px] font-bold opacity-50 uppercase tracking-widest">Foto do produto (opcional)</span>
-    {value ? <div className="relative w-28 h-28"><img src={imagemProdutoUrl(value, 300)} alt="Prévia" className="w-full h-full object-cover border border-current/20"/><button type="button" onClick={() => onChange('')} className="absolute -top-2 -right-2 bg-rose-600 text-white p-1 rounded-full"><X size={13}/></button></div> :
+    {value ? <div className="relative w-36 aspect-square border border-current/20 bg-white p-2"><img src={imagemProdutoUrl(value, 400)} alt="Prévia completa do produto" className="w-full h-full object-contain"/><button type="button" onClick={() => onChange('')} className="absolute -top-2 -right-2 bg-rose-600 text-white p-1 rounded-full"><X size={13}/></button></div> :
       <label className="btn-secondary inline-flex items-center gap-2 px-4 py-3 cursor-pointer text-xs"><ImagePlus size={16}/>{enviando ? <><LoaderCircle size={14} className="animate-spin"/> Enviando</> : 'Escolher foto'}<input className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={selecionar} disabled={enviando}/></label>}
     {erro && <p className="text-xs text-rose-500">{erro}</p>}
   </div>
