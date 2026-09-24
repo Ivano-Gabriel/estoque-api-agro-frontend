@@ -1,47 +1,57 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import API_URL, { apiFetch as fetch } from '../config/api'
-import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt, BadgeDollarSign } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt, BadgeDollarSign, Ban, Printer, CreditCard } from 'lucide-react'
+import { imprimirComprovantePdv } from '../utils/impressao'
 
 function Lucro({ token }) {
   const [movimentacoes, setMovimentacoes] = useState([])
   const [fluxo, setFluxo] = useState({ totalEntradas: 0, totalSaidas: 0, saldoLiquido: 0 })
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
+  const [vendas, setVendas] = useState([])
 
-  useEffect(() => {
-    const apiUrl = API_URL
-
-    fetch(apiUrl + '/transacoes', { headers: { 'Authorization': `Bearer ${token}` } })
-    .then(res => res.json())
-    .then(data => {
-      const movs = data.map(t => ({
+  const carregar = useCallback(async () => {
+    setCarregando(true); setErroCarga('')
+    try {
+      const [resTransacoes, resFluxo, resVendas] = await Promise.all([
+        fetch(API_URL + '/transacoes', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(API_URL + '/fluxo-caixa', { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(API_URL + '/vendas', { headers: { 'Authorization': `Bearer ${token}` } })
+      ])
+      const data = await resTransacoes.json()
+      const movs = data.filter(t => !t.estornada).map(t => ({
         id: t.id,
         tipo: t.tipo,
         produto: t.produto?.nome || 'Produto desconhecido',
         quantidade: t.quantidade,
-        valorUnitario: t.precoUnitario,
-        total: t.valorTotal,
-        custoUnitario: t.custoUnitario || 0,
-        lucro: t.lucro || 0,
+        valorUnitario: Number(t.precoUnitario || 0),
+        total: Number(t.valorTotal || 0),
+        custoUnitario: Number(t.custoUnitario || 0),
+        lucro: Number(t.lucro || 0),
         data: new Date(t.data).toLocaleDateString('pt-BR')
       }))
       setMovimentacoes(movs)
-      return fetch(apiUrl + '/fluxo-caixa', { headers: { 'Authorization': `Bearer ${token}` } })
-    })
-    .then(res => res.json())
-    .then(data => {
+      const caixa = await resFluxo.json()
       setFluxo({
-        totalEntradas: data.totalEntradas || 0,
-        totalSaidas: data.totalSaidas || 0,
-        saldoLiquido: data.saldoLiquido || 0
+        totalEntradas: Number(caixa.totalEntradas || 0),
+        totalSaidas: Number(caixa.totalSaidas || 0),
+        saldoLiquido: Number(caixa.saldoLiquido || 0),
+        recebimentosPorForma: caixa.recebimentosPorForma || {}
       })
-      setCarregando(false)
-    })
-    .catch(err => {
-      setErroCarga(err.message)
-      setCarregando(false)
-    })
+      setVendas(await resVendas.json())
+    } catch (err) { setErroCarga(err.message) } finally { setCarregando(false) }
   }, [token])
+
+  useEffect(() => { carregar() }, [carregar])
+
+  async function cancelar(venda) {
+    const motivo = prompt('Por que esta venda será cancelada? O estoque e o caixa serão estornados.')
+    if (!motivo?.trim()) return
+    try {
+      await fetch(`${API_URL}/vendas/${venda.id}/cancelamento`, { method:'PUT', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({motivo}) })
+      await carregar()
+    } catch (e) { setErroCarga(e.message) }
+  }
 
   const { totalEntradas, totalSaidas, saldoLiquido: saldo } = fluxo
   const totalMovimentado = totalEntradas + totalSaidas > 0 ? totalEntradas + totalSaidas : 1
@@ -51,6 +61,7 @@ function Lucro({ token }) {
     .reduce((total, mov) => total + mov.lucro, 0)
 
   const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const rotulosForma = { PIX:'PIX', DINHEIRO:'Dinheiro', CARTAO_DEBITO:'Cartão de débito', CARTAO_CREDITO:'Cartão de crédito', OUTRO:'Outro', NAO_INFORMADO:'Não informado' }
 
   if (erroCarga) return <div role="alert" className="glass-panel p-6"><p>{erroCarga}</p><button className="btn-primary p-3 mt-4" onClick={() => window.location.reload()}>Tentar novamente</button></div>
 
@@ -123,6 +134,17 @@ function Lucro({ token }) {
             <div className="w-full h-1 bg-rose-500/30 rounded-full overflow-hidden flex">
               <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{ width: `${Math.min(percentualLucro, 100)}%` }}></div>
             </div>
+          </div>
+
+          <div className="glass-panel p-6 mt-6">
+            <div className="flex items-center gap-3 mb-5"><CreditCard size={20}/><div><h3 className="font-black text-lg">Recebimentos por forma</h3><p className="text-sm opacity-55">Total acumulado das vendas válidas</p></div></div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">{Object.entries(fluxo.recebimentosPorForma || {}).filter(([,valor]) => Number(valor)>0).map(([forma,valor]) => <div className="metric-small" key={forma}><span>{rotulosForma[forma] || forma}</span><strong>R$ {formatarMoeda(Number(valor))}</strong></div>)}</div>
+            {!Object.values(fluxo.recebimentosPorForma || {}).some(valor => Number(valor)>0) && <p className="opacity-50">As próximas vendas do PDV aparecerão separadas aqui.</p>}
+          </div>
+
+          <div className="glass-panel overflow-hidden mt-6">
+            <div className="p-6 border-b border-current/10"><h3 className="font-black text-lg">Vendas do PDV</h3><p className="text-sm opacity-55">Reimpressão e cancelamento seguro</p></div>
+            {!vendas.length ? <div className="empty-state !min-h-40"><Receipt/><strong>Nenhuma venda no PDV</strong></div> : <div className="divide-y divide-current/10">{vendas.map(venda => <div key={venda.id} className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${venda.status==='CANCELADA'?'opacity-50':''}`}><div><div className="flex items-center gap-2"><strong>{venda.itens.reduce((s,i)=>s+i.quantidade,0)} itens • R$ {formatarMoeda(Number(venda.total))}</strong>{venda.status==='CANCELADA'&&<span className="status-pending">Cancelada</span>}</div><p className="text-sm opacity-55 mt-1">{new Date(venda.criadaEm).toLocaleString('pt-BR')} • {venda.formaPagamentoLabel}{venda.cliente?` • ${venda.cliente}`:''}</p></div><div className="flex gap-2"><button onClick={()=>imprimirComprovantePdv(venda)} className="touch-button border border-current/20" title="Reimprimir"><Printer size={19}/></button>{venda.status!=='CANCELADA'&&<button onClick={()=>cancelar(venda)} className="touch-button border border-rose-500/30 text-rose-500" title="Cancelar venda"><Ban size={19}/></button>}</div></div>)}</div>}
           </div>
 
           <div className="glass-panel overflow-hidden mt-6">

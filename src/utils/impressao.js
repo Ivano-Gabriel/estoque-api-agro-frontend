@@ -31,6 +31,16 @@ export function imprimirComprovanteVenda(comprovante) {
     <div class="linha"></div><div class="center pequeno">Atendente: ${escapar(comprovante.atendente)}<br>Este documento não possui valor fiscal.</div>`)
 }
 
+export function imprimirComprovantePdv(venda) {
+  const itens = venda.itens.map(item => `<div class="item"><div class="forte">${escapar(item.nome)}</div><div class="row"><span>${item.quantidade}${venda.exibirValores ? ` x ${moeda(item.precoUnitario)}` : ' unidade(s)'}</span>${venda.exibirValores ? `<span>${moeda(item.total)}</span>` : ''}</div>${venda.exibirValores && Number(item.desconto)>0 ? `<div class="pequeno">Desconto: -${moeda(item.desconto)}</div>` : ''}</div>`).join('')
+  imprimir(`Comprovante ${venda.id}`, `
+    <h1>${escapar(venda.loja)}</h1><h2>COMPROVANTE NÃO FISCAL</h2>
+    <div class="center pequeno">Venda ${escapar(venda.id.slice(0,8).toUpperCase())}<br>${escapar(new Date(venda.criadaEm).toLocaleString('pt-BR'))}</div>
+    <div class="linha"></div>${venda.cliente ? `<div><span class="forte">Cliente:</span> ${escapar(venda.cliente)}</div>` : ''}${itens}
+    ${venda.exibirValores ? `<div class="linha"></div><div class="row"><span>Subtotal</span><span>${moeda(venda.subtotal)}</span></div>${Number(venda.desconto)>0?`<div class="row"><span>Desconto</span><span>-${moeda(venda.desconto)}</span></div>`:''}<div class="row forte"><span>TOTAL</span><span>${moeda(venda.total)}</span></div><div class="row"><span>${escapar(venda.formaPagamentoLabel)}</span>${venda.troco!=null?`<span>Troco ${moeda(venda.troco)}</span>`:''}</div>` : ''}
+    <div class="linha"></div><div class="center pequeno">Atendente: ${escapar(venda.atendente)}<br>Este documento não possui valor fiscal.</div>`)
+}
+
 export function imprimirNotaRecebida(nota, loja) {
   const itens = nota.itens.map(item => `<div class="item"><div class="forte">${escapar(item.produto)}</div><div class="row"><span>${item.quantidade} x ${moeda(item.custoUnitario)}</span><span>${moeda(item.quantidade * item.custoUnitario)}</span></div></div>`).join('')
   imprimir(`Conferência da nota ${nota.numero}`, `
