@@ -439,5 +439,6 @@ textarea.control-field {
   .pdv-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
   .pdv-cart { position:sticky; top:1rem; max-height:calc(100dvh - 4rem); overflow-y:auto; }
   .pdv-product:hover { transform:translateY(-2px); border-color:color-mix(in srgb,var(--text-color) 48%,transparent); }
+  .pdv-mobile-bar { display:none !important; }
 }
 @media (min-width: 1400px) { .pdv-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }

@@ -10,7 +10,7 @@ function Layout({ role, loja, token, onLogout }) {
 
   const navItems = [
     { name: 'Hub', path: '/', icon: LayoutDashboard, adminOnly: true },
-    { name: 'PDV', path: '/pdv', icon: ShoppingCart },
+    { name: 'Vendas', path: '/pdv', icon: ShoppingCart },
     { name: 'Catálogo', path: '/produtos', icon: PackageSearch },
     { name: 'Gerenciar', path: '/gerenciar', icon: PenTool },
     { name: 'Caixa', path: '/lucro', icon: DollarSign, adminOnly: true },
