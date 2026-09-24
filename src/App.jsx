@@ -10,6 +10,8 @@ import Lucro from './pages/Lucro'
 import Configuracoes from './pages/Configuracoes'
 import OperacaoPendente from './components/OperacaoPendente'
 import Plataforma from './pages/Plataforma'
+import Clientes from './pages/Clientes'
+import NotasRecebidas from './pages/NotasRecebidas'
 
 function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('accessToken'))
@@ -96,6 +98,8 @@ function App() {
               <Route path="produtos" element={<Produtos token={token} loja={loja} />} />
               <Route path="gerenciar" element={<Gerenciar token={token} role={role} loja={loja} />} />
               <Route path="lucro" element={role === 'ADMIN' && loja?.financeiroAtivo ? <Lucro token={token} /> : <Navigate to="/produtos" replace />} />
+              <Route path="clientes" element={<Clientes token={token} role={role} />} />
+              <Route path="notas" element={role === 'ADMIN' && loja?.notasFiscaisAtivas ? <NotasRecebidas token={token} loja={loja} /> : <Navigate to="/produtos" replace />} />
               <Route path="config" element={<Configuracoes token={token} role={role} />} />
               <Route path="*" element={<Navigate to={role === 'ADMIN' ? '/' : '/produtos'} replace />} />
             </Route>

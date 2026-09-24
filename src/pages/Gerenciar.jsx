@@ -5,10 +5,12 @@ import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
 import ImagemProdutoUpload from '../components/ImagemProdutoUpload'
 import CadastroRapidoProdutos from '../components/CadastroRapidoProdutos'
+import ComprovanteVendaModal from '../components/ComprovanteVendaModal'
 
 function Gerenciar({ token, role, loja }) {
   const financeiroAtivo = loja?.financeiroAtivo !== false
   const [produtos, setProdutos] = useState([])
+  const [clientes, setClientes] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
   const { enviando, executar } = useOperacao()
@@ -22,7 +24,8 @@ function Gerenciar({ token, role, loja }) {
 
   const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
-  const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
+  const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', clienteId: '' })
+  const [comprovante, setComprovante] = useState(null)
   const [modalImportacao, setModalImportacao] = useState(false)
   const [arquivoImportacao, setArquivoImportacao] = useState(null)
   const [importando, setImportando] = useState(false)
@@ -40,6 +43,10 @@ function Gerenciar({ token, role, loja }) {
   }, [token])
 
   useEffect(() => { carregarProdutos() }, [carregarProdutos])
+  useEffect(() => {
+    fetch(API_URL + '/clientes', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json()).then(setClientes).catch(() => setClientes([]))
+  }, [token])
   useEffect(() => {
     window.addEventListener('estoque-alterado', carregarProdutos)
     return () => window.removeEventListener('estoque-alterado', carregarProdutos)
@@ -68,7 +75,7 @@ function Gerenciar({ token, role, loja }) {
     setProdutoSelecionado(produto); setModoModal('repor'); setFormRepor({ quantidade: '', precoCusto: '' }); setModalAberto(true);
   }
   function abrirModalVender(produto) {
-    setProdutoSelecionado(produto); setModoModal('vender'); setFormVender({ quantidade: '', precoVenda: '' }); setModalAberto(true);
+    setProdutoSelecionado(produto); setModoModal('vender'); setFormVender({ quantidade: '1', precoVenda: produto.preco || '', clienteId: '' }); setModalAberto(true);
   }
   function abrirModalDeletar(produto) {
     setProdutoSelecionado(produto); setModoModal('deletar'); setModalAberto(true);
@@ -117,8 +124,13 @@ function Gerenciar({ token, role, loja }) {
     const qtd = Number(formVender.quantidade); const preco = financeiroAtivo ? Number(formVender.precoVenda) : 0;
     if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && preco <= 0)) return alert(financeiroAtivo ? 'Informe quantidade inteira e preço positivo.' : 'Informe uma quantidade válida.')
     executar(async () => {
-      await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { quantidade: qtd, preco }, token)
+      const resposta = await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
+        quantidade: qtd,
+        preco,
+        clienteId: formVender.clienteId ? Number(formVender.clienteId) : null,
+      }, token)
       setModalAberto(false)
+      if (resposta.status !== 204) setComprovante(await resposta.json())
     })
   }
 
@@ -528,9 +540,17 @@ function Gerenciar({ token, role, loja }) {
                     <input value={formVender.quantidade} onChange={e => setFormVender({...formVender, quantidade: e.target.value})} type="number" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>
                   {financeiroAtivo && <div>
-                    <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Valor de Saída (R$)</label>
+                    <label className="field-label">Preço cobrado por unidade (R$)</label>
                     <input value={formVender.precoVenda} onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} type="number" step="0.01" className="w-full p-2.5 bg-current/5 border border-current/20 rounded-sm focus:outline-none focus:border-current font-mono" />
                   </div>}
+                  <div>
+                    <label className="field-label">Cliente (opcional)</label>
+                    <select value={formVender.clienteId} onChange={e => setFormVender({...formVender, clienteId:e.target.value})} className="control-field w-full">
+                      <option value="">Venda sem cliente identificado</option>
+                      {clientes.map(cliente => <option key={cliente.id} value={cliente.id}>{cliente.nome}{cliente.telefone ? ` — ${cliente.telefone}` : ''}</option>)}
+                    </select>
+                    <p className="text-sm opacity-55 mt-2">Selecionar o cliente atualiza automaticamente os produtos mais comprados.</p>
+                  </div>
                 </div>
               )}
 
@@ -575,6 +595,7 @@ function Gerenciar({ token, role, loja }) {
           </div>
         </div>
       )}
+      <ComprovanteVendaModal comprovante={comprovante} onClose={() => setComprovante(null)} />
     </div>
   )
 }

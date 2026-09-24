@@ -23,33 +23,6 @@ export function numeroDecimal(valor) {
   return Number.isFinite(numero) ? numero : Number.NaN
 }
 
-export function parsearListaProdutos(texto, padroes, financeiroAtivo) {
-  const linhas = texto.split(/\r?\n/).map(linha => linha.trim()).filter(Boolean)
-  const semCabecalho = linhas.filter((linha, indice) => {
-    if (indice !== 0) return true
-    const primeiroCampo = linha.split(/[;\t]/)[0].trim().toLowerCase()
-    return !['nome', 'produto', 'nome do produto'].includes(primeiroCampo)
-  })
-
-  return semCabecalho.map(linha => {
-    const campos = linha.includes('\t') ? linha.split('\t') : linha.split(';')
-    const [
-      nome = '', quantidade = '', categoria = '', tipo = '', custoOuValidade = '',
-      precoOuDescricao = '', validade = '', descricao = '',
-    ] = campos.map(campo => campo?.trim() || '')
-    return novaLinhaProduto({
-      nome,
-      quantidade: quantidade || padroes.quantidade || '0',
-      categoria: categoria || padroes.categoria || '',
-      tipo: tipo || padroes.tipo || 'UNIDADE',
-      custo: financeiroAtivo ? custoOuValidade : '',
-      preco: financeiroAtivo ? precoOuDescricao : '',
-      dataValidade: financeiroAtivo ? validade : custoOuValidade,
-      descricao: financeiroAtivo ? descricao : precoOuDescricao,
-    })
-  })
-}
-
 export function validarLinhaProduto(linha, financeiroAtivo) {
   const erros = []
   const quantidade = Number(linha.quantidade)
