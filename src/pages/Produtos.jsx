@@ -126,7 +126,7 @@ function Produtos({ token, loja }) {
               onClick={() => abrirModalVender(p)}
               className="glass-panel p-5 flex flex-col h-full hover:border-current/50 transition-all cursor-pointer group relative overflow-hidden"
             >
-              {loja?.fotosAtivas && p.imagemUrl && <img src={imagemProdutoUrl(p.imagemUrl)} alt={`Foto de ${p.nome}`} className="w-full h-36 object-cover mb-4 border border-current/10" loading="lazy" />}
+              {loja?.fotosAtivas && p.imagemUrl && <div className="w-full aspect-square max-h-56 mb-4 border border-current/10 bg-white p-3 overflow-hidden"><img src={imagemProdutoUrl(p.imagemUrl)} alt={`Foto de ${p.nome}`} className="w-full h-full object-contain" loading="lazy" /></div>}
               <div className="flex justify-between items-start mb-4">
                 <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
                   {p.categoria?.nome || 'Sem Categoria'}
@@ -143,7 +143,7 @@ function Produtos({ token, loja }) {
 
               <div className="flex items-center justify-between mt-auto pt-4 border-t border-current/10">
                 {loja?.financeiroAtivo && <div className="flex flex-col">
-                  <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">Preço Un.</span>
+                  <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">Preço de venda</span>
                   <span className="font-mono font-light text-xl opacity-90">R$ {p.preco?.toFixed(2)}</span>
                 </div>}
                 
@@ -185,7 +185,7 @@ function Produtos({ token, loja }) {
               </div>
               
               <div>
-                {loja?.financeiroAtivo && <><label className="block text-[10px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço Unitário (R$)</label>
+                {loja?.financeiroAtivo && <><label className="block text-[10px] font-bold opacity-50 uppercase tracking-widest mb-2">Preço cobrado por unidade (R$)</label>
                 <input 
                   value={formVender.precoVenda} 
                   onChange={e => setFormVender({...formVender, precoVenda: e.target.value})} 
