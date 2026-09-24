@@ -1,13 +1,12 @@
-import { AlertTriangle, CheckCircle2, ClipboardPaste, CopyPlus, ListPlus, Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, CopyPlus, ListPlus, Plus, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import API_URL, { apiFetch } from '../config/api'
-import { novaLinhaProduto, parsearListaProdutos, produtoRequestDaLinha, validarLinhaProduto } from '../utils/cadastroLote'
+import { novaLinhaProduto, produtoRequestDaLinha, validarLinhaProduto } from '../utils/cadastroLote'
 
 const TIPOS_COMUNS = ['UNIDADE', 'PEÇA', 'PACOTE', 'CAIXA', 'KG', 'LITRO']
 
 function CadastroRapidoProdutos({ token, financeiroAtivo, categorias, onClose, onSuccess }) {
   const [linhas, setLinhas] = useState(() => [novaLinhaProduto()])
-  const [texto, setTexto] = useState('')
   const [padroes, setPadroes] = useState({ categoria: categorias[0] || '', tipo: 'UNIDADE', quantidade: '0' })
   const [errosServidor, setErrosServidor] = useState([])
   const [enviando, setEnviando] = useState(false)
@@ -43,18 +42,6 @@ function CadastroRapidoProdutos({ token, financeiroAtivo, categorias, onClose, o
     delete copia.id
     const nova = novaLinhaProduto(copia)
     setLinhas(atuais => [...atuais.slice(0, indice + 1), nova, ...atuais.slice(indice + 1)])
-  }
-
-  function usarLista() {
-    const novas = parsearListaProdutos(texto, padroes, financeiroAtivo)
-    if (!novas.length) return
-    if (novas.length > 200) {
-      setErrosServidor([{ linha: 0, campo: 'lote', mensagem: `A lista tem ${novas.length} produtos. Divida em blocos de até 200 para não perder nenhuma linha.` }])
-      return
-    }
-    setLinhas(novas)
-    setTexto('')
-    setErrosServidor([])
   }
 
   async function cadastrar() {
@@ -101,7 +88,7 @@ function CadastroRapidoProdutos({ token, financeiroAtivo, categorias, onClose, o
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md p-2 sm:p-4 overflow-y-auto">
-      <div className="glass-panel !bg-[var(--bg-color)] w-full max-w-7xl mx-auto my-2 sm:my-6 overflow-hidden">
+      <div className="cadastro-rapido glass-panel !bg-[var(--bg-color)] w-full max-w-7xl mx-auto my-2 sm:my-6 overflow-hidden">
         <header className="sticky top-0 z-20 flex items-center justify-between border-b border-current/10 bg-[var(--bg-color)] p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <ListPlus size={22} />
@@ -114,11 +101,11 @@ function CadastroRapidoProdutos({ token, financeiroAtivo, categorias, onClose, o
         </header>
 
         <div className="p-4 sm:p-6 space-y-6">
-          <section className="grid lg:grid-cols-[1fr_1.35fr] gap-4">
+          <section>
             <div className="border border-current/15 bg-current/5 p-4 space-y-4">
               <div>
-                <h3 className="text-xs font-black uppercase tracking-widest">1. Defina os padrões</h3>
-                <p className="text-xs opacity-55 mt-1">Eles preenchem automaticamente os produtos colados ou adicionados.</p>
+                <h3 className="text-sm font-black uppercase tracking-widest">Padrões do cadastro</h3>
+                <p className="text-sm opacity-65 mt-1">Escolha uma vez. As novas linhas já serão preenchidas automaticamente.</p>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <label className="text-[10px] font-bold uppercase tracking-wider">
@@ -137,29 +124,13 @@ function CadastroRapidoProdutos({ token, financeiroAtivo, categorias, onClose, o
               <datalist id="categorias-rapidas">{categorias.map(categoria => <option key={categoria} value={categoria} />)}</datalist>
               <datalist id="tipos-rapidos">{TIPOS_COMUNS.map(tipo => <option key={tipo} value={tipo} />)}</datalist>
             </div>
-
-            <div className="border border-current/15 p-4 space-y-3">
-              <div className="flex items-start gap-3">
-                <ClipboardPaste size={18} className="mt-0.5" />
-                <div>
-                  <h3 className="text-xs font-black uppercase tracking-widest">2. Cole a lista</h3>
-                  <p className="text-xs opacity-55 mt-1">
-                    Um nome por linha já funciona. Para trazer tudo: Nome; Qtd; Categoria; Unidade{financeiroAtivo ? '; Compra; Venda; Validade; Descrição' : '; Validade; Descrição'}.
-                  </p>
-                </div>
-              </div>
-              <textarea value={texto} onChange={e => setTexto(e.target.value)} rows="4" className="control-field w-full p-3 font-mono text-xs" placeholder={financeiroAtivo ? 'Camiseta preta; 10; Roupas; PEÇA; 30,00; 59,90' : 'Camiseta preta; 10; Roupas; PEÇA'} />
-              <button onClick={usarLista} disabled={!texto.trim()} className="btn-secondary w-full sm:w-auto px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest disabled:opacity-30">
-                Transformar em produtos
-              </button>
-            </div>
           </section>
 
           <section className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
               <div>
-                <h3 className="text-xs font-black uppercase tracking-widest">3. Confira e salve</h3>
-                <p className="text-xs opacity-55 mt-1">{preenchidas.length} produto(s) preenchido(s) • limite de 200</p>
+                <h3 className="text-sm font-black uppercase tracking-widest">Produtos</h3>
+                <p className="text-sm opacity-65 mt-1">Use “+ 5 linhas” para cadastrar rapidamente. Limite de 200.</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => adicionarLinhas(1)} className="btn-secondary flex-1 sm:flex-none px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2"><Plus size={14} /> 1 linha</button>

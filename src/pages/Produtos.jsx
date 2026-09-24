@@ -4,9 +4,11 @@ import API_URL, { apiFetch as fetch } from '../config/api'
 import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
 import { imagemProdutoUrl } from '../utils/cloudinary'
+import ComprovanteVendaModal from '../components/ComprovanteVendaModal'
 
 function Produtos({ token, loja }) {
   const [produtos, setProdutos] = useState([])
+  const [clientes, setClientes] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
   const { enviando, executar } = useOperacao()
@@ -16,7 +18,8 @@ function Produtos({ token, loja }) {
   
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [modalAberto, setModalAberto] = useState(false)
-  const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '' })
+  const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', clienteId: '' })
+  const [comprovante, setComprovante] = useState(null)
 
   const recarregarProdutos = useCallback(() => {
     setCarregando(true)
@@ -31,6 +34,10 @@ function Produtos({ token, loja }) {
   }, [token])
   
   useEffect(() => { recarregarProdutos() }, [recarregarProdutos])
+  useEffect(() => {
+    fetch(API_URL + '/clientes', { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(res => res.json()).then(setClientes).catch(() => setClientes([]))
+  }, [token])
   useEffect(() => {
     window.addEventListener('estoque-alterado', recarregarProdutos)
     return () => window.removeEventListener('estoque-alterado', recarregarProdutos)
@@ -47,7 +54,7 @@ function Produtos({ token, loja }) {
 
   function abrirModalVender(produto) {
     setProdutoSelecionado(produto)
-    setFormVender({ quantidade: 1, precoVenda: produto.preco })
+    setFormVender({ quantidade: 1, precoVenda: produto.preco, clienteId: '' })
     setModalAberto(true)
   }
 
@@ -61,9 +68,13 @@ function Produtos({ token, loja }) {
     }
 
     executar(async () => {
-      await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, { quantidade: qtd, preco }, token)
+      const resposta = await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
+        quantidade: qtd,
+        preco,
+        clienteId: formVender.clienteId ? Number(formVender.clienteId) : null,
+      }, token)
       setModalAberto(false)
-      alert('Venda registrada com sucesso!')
+      if (resposta.status !== 204) setComprovante(await resposta.json())
     })
   }
 
@@ -72,14 +83,14 @@ function Produtos({ token, loja }) {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
       
-      <header className="flex justify-between items-end border-b border-current pb-4 opacity-90">
+      <header className="page-header">
         <div>
-          <h1 className="text-2xl font-bold tracking-widest uppercase">Catálogo</h1>
-          <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">{loja?.financeiroAtivo ? 'Venda rápida • Estoque' : 'Saída rápida • Estoque'}</p>
+          <h1>Catálogo</h1>
+          <p>{loja?.financeiroAtivo ? 'Venda rápida e controle de estoque' : 'Saída rápida e controle de estoque'}</p>
         </div>
       </header>
 
-      <div className="glass-panel p-6 space-y-6">
+      <div className="glass-panel mobile-panel space-y-6">
         <div className="relative">
           <Search size={22} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
           <input
@@ -96,7 +107,7 @@ function Produtos({ token, loja }) {
             <button
               key={cat}
               onClick={() => setCategoriaSelecionada(cat)}
-              className={`flex-shrink-0 px-5 py-2 rounded-sm text-[10px] font-bold uppercase tracking-widest transition-all border ${
+              className={`flex-shrink-0 px-5 py-3 rounded-sm text-sm font-bold transition-all border ${
                 categoriaSelecionada === cat 
                   ? 'bg-[var(--text-color)] text-[var(--bg-color)] border-[var(--text-color)] shadow-[0_0_15px_rgba(127,127,127,0.15)]'
                   : 'bg-transparent opacity-60 border-current/20 hover:opacity-100 hover:border-current/50'
@@ -194,6 +205,15 @@ function Produtos({ token, loja }) {
                 /></>}
               </div>
 
+              <div>
+                <label className="field-label">Cliente (opcional)</label>
+                <select value={formVender.clienteId} onChange={e => setFormVender({...formVender, clienteId: e.target.value})} className="control-field w-full">
+                  <option value="">Venda sem cliente identificado</option>
+                  {clientes.map(cliente => <option key={cliente.id} value={cliente.id}>{cliente.nome}{cliente.telefone ? ` — ${cliente.telefone}` : ''}</option>)}
+                </select>
+                <p className="text-sm opacity-55 mt-2">Ao selecionar, esta compra entra no histórico de produtos mais comprados do cliente.</p>
+              </div>
+
 
             </div>
 
@@ -209,6 +229,7 @@ function Produtos({ token, loja }) {
           </div>
         </div>
       )}
+      <ComprovanteVendaModal comprovante={comprovante} onClose={() => setComprovante(null)} />
     </div>
   )
 }
