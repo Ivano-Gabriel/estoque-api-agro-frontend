@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { enviarMovimentacao, operacaoPendente } from '../config/api'
+import { confirmarOperacaoPendente, operacaoPendente } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
 
 export default function OperacaoPendente({ token }) {
@@ -18,7 +18,7 @@ export default function OperacaoPendente({ token }) {
   return <div role="alert" className="bg-amber-100 text-amber-950 p-4 text-sm flex flex-wrap items-center gap-3">
     <span>Há uma movimentação sem confirmação. Confirme antes de registrar outra venda ou reposição.</span>
     <button disabled={enviando} className="border border-current rounded px-3 py-2 font-bold" onClick={() => executar(async () => {
-      await enviarMovimentacao(pending.url, JSON.parse(pending.body), token)
+      await confirmarOperacaoPendente(token)
       alert('Operação confirmada. O estoque foi atualizado uma única vez.')
     })}>{enviando ? 'Confirmando...' : 'Confirmar operação pendente'}</button>
   </div>

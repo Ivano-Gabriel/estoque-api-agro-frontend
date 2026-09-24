@@ -1,6 +1,6 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
-import API_URL, { apiFetch, enviarMovimentacao, operacaoPendente } from '../src/config/api.js'
+import API_URL, { apiFetch, enviarMovimentacao, enviarVenda, operacaoPendente } from '../src/config/api.js'
 
 beforeEach(() => {
   const data = new Map([['userEmail', 'teste@loja.com']])
@@ -54,4 +54,20 @@ test('erro de senha no login não dispara expiração e 422 mantém os erros da 
   globalThis.fetch = async () => new Response('{"erros":[{"linha":2}]}', { status: 422 })
   const response = await apiFetch(API_URL + '/produtos/importacao')
   assert.equal((await response.json()).erros[0].linha, 2)
+})
+
+test('PDV envia o carrinho por POST e reutiliza a chave após falha de rede', async () => {
+  const chamadas = []
+  globalThis.fetch = async (_url, options) => {
+    chamadas.push(options)
+    if (chamadas.length === 1) throw new TypeError('resposta perdida')
+    return new Response(JSON.stringify({ id: 'venda' }), { status: 201, headers: { 'Content-Type': 'application/json' } })
+  }
+  const corpo = { formaPagamento: 'PIX', itens: [{ produtoId: 1, quantidade: 2 }] }
+  await assert.rejects(enviarVenda(API_URL + '/vendas', corpo, 'token'))
+  await enviarVenda(API_URL + '/vendas', corpo, 'token')
+  assert.equal(chamadas[0].method, 'POST')
+  assert.equal(chamadas[1].method, 'POST')
+  assert.equal(chamadas[0].headers['Idempotency-Key'], chamadas[1].headers['Idempotency-Key'])
+  assert.equal(operacaoPendente(), null)
 })

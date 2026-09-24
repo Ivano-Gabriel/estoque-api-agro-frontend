@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool, Users, ReceiptText, MoreHorizontal, X } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool, Users, ReceiptText, MoreHorizontal, X, ShoppingCart } from 'lucide-react'
 import { useState } from 'react'
 import RelatorioWhatsapp from './RelatorioWhatsapp'
 
@@ -10,6 +10,7 @@ function Layout({ role, loja, token, onLogout }) {
 
   const navItems = [
     { name: 'Hub', path: '/', icon: LayoutDashboard, adminOnly: true },
+    { name: 'PDV', path: '/pdv', icon: ShoppingCart },
     { name: 'Catálogo', path: '/produtos', icon: PackageSearch },
     { name: 'Gerenciar', path: '/gerenciar', icon: PenTool },
     { name: 'Caixa', path: '/lucro', icon: DollarSign, adminOnly: true },
@@ -17,7 +18,7 @@ function Layout({ role, loja, token, onLogout }) {
     { name: 'Notas fiscais', path: '/notas', icon: ReceiptText, adminOnly: true, notasOnly: true },
     { name: 'Ajustes', path: '/config', icon: Settings },
   ].filter(item => (!item.adminOnly || role === 'ADMIN') && (item.path !== '/lucro' || loja?.financeiroAtivo) && (!item.notasOnly || loja?.notasFiscaisAtivas))
-  const principaisMobile = navItems.filter(item => ['/', '/produtos', '/gerenciar', '/clientes'].includes(item.path))
+  const principaisMobile = navItems.filter(item => ['/pdv', '/produtos', '/gerenciar', '/clientes'].includes(item.path))
   const extrasMobile = navItems.filter(item => !principaisMobile.includes(item))
 
   const LogoI = () => (

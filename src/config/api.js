@@ -44,7 +44,7 @@ function limparPendente(storageKey) {
   window.dispatchEvent(new Event('operacao-pendente'))
 }
 
-export async function enviarMovimentacao(url, body, token) {
+async function enviarOperacao(url, body, token, method) {
   const storageKey = pendingKey()
   const serialized = JSON.stringify(body)
   let pending = operacaoPendente()
@@ -52,12 +52,12 @@ export async function enviarMovimentacao(url, body, token) {
     throw new Error('Confirme a operação pendente no aviso acima antes de registrar outra movimentação.')
   }
   if (!pending) {
-    pending = { url, body: serialized, key: crypto.randomUUID() }
+    pending = { url, body: serialized, key: crypto.randomUUID(), method }
     localStorage.setItem(storageKey, JSON.stringify(pending))
   }
   try {
     const response = await apiFetch(url, {
-      method: 'PUT',
+      method: pending.method || method,
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'Idempotency-Key': pending.key },
       body: serialized
     })
@@ -69,4 +69,18 @@ export async function enviarMovimentacao(url, body, token) {
     else window.dispatchEvent(new Event('operacao-pendente'))
     throw error
   }
+}
+
+export function enviarMovimentacao(url, body, token) {
+  return enviarOperacao(url, body, token, 'PUT')
+}
+
+export function enviarVenda(url, body, token) {
+  return enviarOperacao(url, body, token, 'POST')
+}
+
+export function confirmarOperacaoPendente(token) {
+  const pending = operacaoPendente()
+  if (!pending) return Promise.resolve(null)
+  return enviarOperacao(pending.url, JSON.parse(pending.body), token, pending.method || 'PUT')
 }

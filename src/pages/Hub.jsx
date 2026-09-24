@@ -202,10 +202,10 @@ function Hub({ token, loja }) {
         </div>
 
         <Link
-          to="/gerenciar"
+          to="/pdv"
           className="border border-current opacity-70 hover:opacity-100 hover:bg-current/10 flex items-center justify-center gap-2 px-6 py-2.5 transition-all text-xs font-bold tracking-widest uppercase group"
         >
-          <ShoppingCart size={14} /> Registrar movimentação
+          <ShoppingCart size={14} /> Nova venda no PDV
         </Link>
       </header>
 
@@ -481,6 +481,16 @@ function Hub({ token, loja }) {
               </h2>
 
               <Link
+                to="/pdv"
+                className="group flex items-center justify-between py-3 border-b border-current/10 hover:border-current/40 transition-colors"
+              >
+                <span className="text-xs font-bold opacity-60 uppercase tracking-widest group-hover:opacity-100 transition-opacity">
+                  Abrir PDV
+                </span>
+                <ArrowRight size={14} className="opacity-30 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </Link>
+
+              <Link
                 to="/produtos"
                 className="group flex items-center justify-between py-3 border-b border-current/10 hover:border-current/40 transition-colors"
               >
@@ -508,5 +518,4 @@ function Hub({ token, loja }) {
 }
 
 export default Hub
-
 
