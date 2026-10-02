@@ -6,6 +6,8 @@ import useOperacao from '../hooks/useOperacao'
 import ImagemProdutoUpload from '../components/ImagemProdutoUpload'
 import CadastroRapidoProdutos from '../components/CadastroRapidoProdutos'
 import ComprovanteVendaModal from '../components/ComprovanteVendaModal'
+import { useDialog } from '../components/dialog-context'
+import { useNavigate } from 'react-router-dom'
 
 function Gerenciar({ token, role, loja }) {
   const financeiroAtivo = loja?.financeiroAtivo !== false
@@ -14,6 +16,8 @@ function Gerenciar({ token, role, loja }) {
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
   const { enviando, executar } = useOperacao()
+  const { avisar } = useDialog()
+  const navigate = useNavigate()
 
   const [termoBusca, setTermoBusca] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
@@ -22,7 +26,7 @@ function Gerenciar({ token, role, loja }) {
   const [modoModal, setModoModal] = useState('')
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
 
-  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '' })
+  const [form, setForm] = useState({ nome: '', preco: '', custo: '', quantidade: '', categoria: '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '', sku: '', codigoBarras: '', variacao: '', estoqueMinimo: '5' })
   const [formRepor, setFormRepor] = useState({ quantidade: '', precoCusto: '' })
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', clienteId: '' })
   const [comprovante, setComprovante] = useState(null)
@@ -55,7 +59,7 @@ function Gerenciar({ token, role, loja }) {
   const categoriasExistentes = [...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean))]
 
   const produtosFiltrados = produtos.filter(p => {
-    const nomeMatch = p.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    const nomeMatch = `${p.nome} ${p.sku || ''} ${p.codigoBarras || ''} ${p.variacao || ''}`.toLowerCase().includes(termoBusca.toLowerCase())
     const catMatch = filtroCategoria === '' || (p.categoria?.nome || 'Sem Categoria') === filtroCategoria
     return nomeMatch && catMatch
   })
@@ -63,31 +67,31 @@ function Gerenciar({ token, role, loja }) {
   // Funções de abrir modal omitidas por espaço (são iguais às originais)
   function abrirModalNovo() {
     setProdutoSelecionado(null); setModoModal('novo');
-    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '' })
+    setForm({ nome: '', preco: '', custo: '', quantidade: '', categoria: categoriasExistentes[0] || '', novaCategoria: '', tipo: 'UNIDADE', dataValidade: '', descricao: '', imagemUrl: '', sku: '', codigoBarras: '', variacao: '', estoqueMinimo: '5' })
     setModalAberto(true)
   }
   function abrirModalEditar(produto) {
     setProdutoSelecionado(produto); setModoModal('editar');
-    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE', dataValidade: produto.dataValidade || '', descricao: produto.descricao || '', imagemUrl: produto.imagemUrl || '' })
+    setForm({ nome: produto.nome, preco: produto.preco || '', custo: '', quantidade: produto.quantidadeEstoque || '', categoria: produto.categoria?.nome || '', novaCategoria: '', tipo: produto.tipo || 'UNIDADE', dataValidade: produto.dataValidade || '', descricao: produto.descricao || '', imagemUrl: produto.imagemUrl || '', sku: produto.sku || '', codigoBarras: produto.codigoBarras || '', variacao: produto.variacao || '', estoqueMinimo: String(produto.estoqueMinimo ?? 5) })
     setModalAberto(true)
   }
   function abrirModalRepor(produto) {
     setProdutoSelecionado(produto); setModoModal('repor'); setFormRepor({ quantidade: '', precoCusto: '' }); setModalAberto(true);
   }
   function abrirModalVender(produto) {
-    setProdutoSelecionado(produto); setModoModal('vender'); setFormVender({ quantidade: '1', precoVenda: produto.preco || '', clienteId: '' }); setModalAberto(true);
+    navigate(`/pdv?busca=${encodeURIComponent(produto.nome)}`)
   }
   function abrirModalDeletar(produto) {
     setProdutoSelecionado(produto); setModoModal('deletar'); setModalAberto(true);
   }
 
   // Funções de API (Salvar, Deletar, Repor, Vender)
-  function handleSalvar() {
+  async function handleSalvar() {
     const editando = Boolean(produtoSelecionado?.id)
     const quantidade = editando ? produtoSelecionado.quantidadeEstoque : Number(form.quantidade || '0')
     const custoUnitario = editando ? null : parseFloat(form.custo || '0')
-    if (!form.nome.trim() || !Number.isSafeInteger(quantidade) || quantidade < 0 || (financeiroAtivo && !form.preco)) return alert('Preencha os dados obrigatórios.')
-    if (financeiroAtivo && !editando && quantidade > 0 && custoUnitario <= 0) return alert('Informe o custo do estoque inicial.')
+    if (!form.nome.trim() || !Number.isSafeInteger(quantidade) || quantidade < 0 || (financeiroAtivo && !form.preco)) return avisar('Preencha os dados obrigatórios.')
+    if (financeiroAtivo && !editando && quantidade > 0 && custoUnitario <= 0) return avisar('Informe o custo do estoque inicial.')
 
     const obj = {
       nome: form.nome,
@@ -99,6 +103,10 @@ function Gerenciar({ token, role, loja }) {
       categoria: { nome: form.categoria === 'nova_categoria' ? form.novaCategoria : form.categoria },
       descricao: form.descricao || null,
       imagemUrl: loja?.fotosAtivas ? (form.imagemUrl || null) : null,
+      sku: form.sku.trim() || null,
+      codigoBarras: form.codigoBarras.trim() || null,
+      variacao: form.variacao.trim() || null,
+      estoqueMinimo: Number(form.estoqueMinimo || 0),
     }
     const url = editando ? `${API_URL}/produtos/${produtoSelecionado.id}` : `${API_URL}/produtos`
     executar(async () => {
@@ -112,17 +120,17 @@ function Gerenciar({ token, role, loja }) {
       setModalAberto(false); carregarProdutos()
     })
   }
-  function handleRepor() {
+  async function handleRepor() {
     const qtd = Number(formRepor.quantidade); const custo = financeiroAtivo ? Number(formRepor.precoCusto) : 0;
-    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && custo <= 0)) return alert(financeiroAtivo ? 'Informe quantidade inteira e custo positivo.' : 'Informe uma quantidade válida.')
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && custo <= 0)) return avisar(financeiroAtivo ? 'Informe quantidade inteira e custo positivo.' : 'Informe uma quantidade válida.')
     executar(async () => {
       await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/compra-com-custo`, { quantidade: qtd, preco: custo }, token)
       setModalAberto(false)
     })
   }
-  function handleVender() {
+  async function handleVender() {
     const qtd = Number(formVender.quantidade); const preco = financeiroAtivo ? Number(formVender.precoVenda) : 0;
-    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && preco <= 0)) return alert(financeiroAtivo ? 'Informe quantidade inteira e preço positivo.' : 'Informe uma quantidade válida.')
+    if (!Number.isSafeInteger(qtd) || qtd <= 0 || (financeiroAtivo && preco <= 0)) return avisar(financeiroAtivo ? 'Informe quantidade inteira e preço positivo.' : 'Informe uma quantidade válida.')
     executar(async () => {
       const resposta = await enviarMovimentacao(API_URL + `/produtos/${produtoSelecionado.id}/venda-com-lucro`, {
         quantidade: qtd,
@@ -156,7 +164,7 @@ function Gerenciar({ token, role, loja }) {
       link.remove()
       URL.revokeObjectURL(url)
     } catch {
-      alert('Não foi possível baixar o modelo.')
+      await avisar('Não foi possível baixar o modelo.')
     }
   }
 
@@ -227,7 +235,7 @@ function Gerenciar({ token, role, loja }) {
         <div className="relative flex-1">
           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
           <input 
-            placeholder="Buscar..." 
+            placeholder="Buscar por nome, SKU ou código..."
             value={termoBusca} 
             onChange={e => setTermoBusca(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-transparent border border-current/20 rounded-sm focus:outline-none focus:border-current text-sm tracking-widest font-bold uppercase transition-all placeholder:opacity-30"
@@ -277,7 +285,7 @@ function Gerenciar({ token, role, loja }) {
                     <tr key={p.id} className="hover:bg-current/5 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-bold text-xs uppercase tracking-wider opacity-90">{p.nome}</div>
-                        <div className="text-[9px] font-mono opacity-50 mt-1 uppercase tracking-widest">{p.tipo}</div>
+                        <div className="text-[9px] font-mono opacity-50 mt-1 uppercase tracking-widest">{[p.tipo, p.variacao, p.sku && `SKU ${p.sku}`].filter(Boolean).join(' • ')}</div>
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-2 px-2 py-1 border border-current/20 rounded-sm text-[9px] font-bold uppercase tracking-widest opacity-70">
@@ -289,7 +297,7 @@ function Gerenciar({ token, role, loja }) {
                       </td>}
                       <td className="px-6 py-4">
                         <span className={`inline-flex px-2 py-1 border rounded-sm text-[10px] font-bold uppercase tracking-widest ${
-                          p.quantidadeEstoque <= 5 ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
+                          p.quantidadeEstoque <= (p.estoqueMinimo ?? 5) ? 'border-rose-500/50 text-rose-500' : 'border-current/20 opacity-80'
                         }`}>
                           {p.quantidadeEstoque} UN
                         </span>
@@ -472,6 +480,12 @@ function Gerenciar({ token, role, loja }) {
                   <div>
                     <label className="block text-[9px] font-bold opacity-50 uppercase tracking-widest mb-2">Descrição breve</label>
                     <textarea maxLength="500" rows="3" value={form.descricao} onChange={e => setForm({...form, descricao: e.target.value})} className="control-field w-full p-2.5" placeholder="Cor, tamanho, marca ou detalhe importante" />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label className="field-label">SKU / referência<input maxLength="60" value={form.sku} onChange={e => setForm({...form, sku:e.target.value})} className="control-field w-full mt-2" placeholder="CAM-001-P"/></label>
+                    <label className="field-label">Código de barras<input inputMode="numeric" maxLength="50" value={form.codigoBarras} onChange={e => setForm({...form, codigoBarras:e.target.value.replace(/\D/g,'')})} className="control-field w-full mt-2" placeholder="789..."/></label>
+                    <label className="field-label">Variação<input maxLength="120" value={form.variacao} onChange={e => setForm({...form, variacao:e.target.value})} className="control-field w-full mt-2" placeholder="Preto • tamanho M"/></label>
+                    <label className="field-label">Avisar estoque baixo em<input type="number" min="0" max="1000000" value={form.estoqueMinimo} onChange={e => setForm({...form, estoqueMinimo:e.target.value})} className="control-field w-full mt-2"/></label>
                   </div>
                   {loja?.fotosAtivas && <ImagemProdutoUpload value={form.imagemUrl} onChange={imagemUrl => setForm({...form, imagemUrl})} token={token} />}
                   <label className="block text-xs">

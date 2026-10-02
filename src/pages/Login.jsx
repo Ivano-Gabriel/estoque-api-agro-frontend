@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Boxes, LockKeyhole, LogIn, Mail } from 'lucide-react'
+import { Boxes, KeyRound, LockKeyhole, LogIn, Mail } from 'lucide-react'
 import API_URL, { apiFetch as fetch } from '../config/api'
 
 function Login({ onLogin, aviso }) {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [codigoMfa, setCodigoMfa] = useState('')
+  const [mfaNecessario, setMfaNecessario] = useState(false)
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
 
@@ -18,7 +20,7 @@ function Login({ onLogin, aviso }) {
       const resposta = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, senha })
+        body: JSON.stringify({ email, senha, codigoMfa: mfaNecessario ? codigoMfa : null })
       })
 
       if (!resposta.ok) {
@@ -29,6 +31,11 @@ function Login({ onLogin, aviso }) {
 
       onLogin(await resposta.json())
     } catch (error) {
+      if (error.status === 428 || error.code === 'MFA_REQUIRED') {
+        setMfaNecessario(true)
+        setErro('Digite o código de 6 dígitos do aplicativo autenticador.')
+        return
+      }
       setErro(error instanceof TypeError
         ? 'Servidor indisponível. Verifique sua conexão.'
         : error.message)
@@ -72,6 +79,25 @@ function Login({ onLogin, aviso }) {
             </div>
           </label>
 
+          {mfaNecessario && <label className="block">
+            <span className="block text-[9px] font-bold opacity-55 uppercase tracking-widest mb-2">Código de segurança</span>
+            <div className="relative">
+              <KeyRound size={15} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
+              <input
+                autoFocus
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength="6"
+                value={codigoMfa}
+                onChange={event => setCodigoMfa(event.target.value.replace(/\D/g, ''))}
+                placeholder="000000"
+                required
+                className="control-field w-full py-3.5 pl-11 pr-4 rounded-sm text-lg tracking-[0.4em]"
+              />
+            </div>
+          </label>}
+
           <label className="block">
             <span className="block text-[9px] font-bold opacity-55 uppercase tracking-widest mb-2">Senha</span>
             <div className="relative">
@@ -100,13 +126,14 @@ function Login({ onLogin, aviso }) {
             className="btn-primary w-full p-3.5 rounded-sm font-bold text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2"
           >
             <LogIn size={15} />
-            {carregando ? 'Conectando...' : 'Entrar no sistema'}
+            {carregando ? 'Conectando...' : mfaNecessario ? 'Validar código' : 'Entrar no sistema'}
           </button>
         </form>
 
         <p className="text-center text-[9px] uppercase tracking-widest opacity-35 mt-8">
           Sessão individual e protegida
         </p>
+        <p className="text-center text-[10px] opacity-45 mt-3"><a className="underline" href="/privacidade.html" target="_blank">Privacidade</a> • <a className="underline" href="/termos.html" target="_blank">Termos de uso</a></p>
       </main>
     </div>
   )

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { confirmarOperacaoPendente, operacaoPendente } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
+import { useDialog } from './dialog-context'
 
 export default function OperacaoPendente({ token }) {
   const [pending, setPending] = useState(operacaoPendente)
   const { enviando, executar } = useOperacao()
+  const { avisar } = useDialog()
   useEffect(() => {
     const atualizar = () => setPending(operacaoPendente())
     window.addEventListener('operacao-pendente', atualizar)
@@ -19,7 +21,7 @@ export default function OperacaoPendente({ token }) {
     <span>Há uma movimentação sem confirmação. Confirme antes de registrar outra venda ou reposição.</span>
     <button disabled={enviando} className="border border-current rounded px-3 py-2 font-bold" onClick={() => executar(async () => {
       await confirmarOperacaoPendente(token)
-      alert('Operação confirmada. O estoque foi atualizado uma única vez.')
+      await avisar('Operação confirmada. O estoque foi atualizado uma única vez.', 'Tudo certo')
     })}>{enviando ? 'Confirmando...' : 'Confirmar operação pendente'}</button>
   </div>
 }

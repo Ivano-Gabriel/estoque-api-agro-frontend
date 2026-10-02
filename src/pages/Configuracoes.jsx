@@ -3,6 +3,8 @@ import { Sun, Moon, Database, ArchiveX, RotateCcw, UserPlus } from 'lucide-react
 import API_URL, { apiFetch as fetch } from '../config/api'
 import AcessosFuncionarias from '../components/AcessosFuncionarias'
 import useOperacao from '../hooks/useOperacao'
+import AuditoriaPainel from '../components/AuditoriaPainel'
+import { useDialog } from '../components/dialog-context'
 
 function Configuracoes({ token, role }) {
   const [isDark, setIsDark] = useState(true)
@@ -11,6 +13,7 @@ function Configuracoes({ token, role }) {
   const [salvandoUsuario, setSalvandoUsuario] = useState(false)
   const [erroLixeira, setErroLixeira] = useState('')
   const { enviando, executar } = useOperacao()
+  const { avisar } = useDialog()
 
   const carregarLixeira = useCallback(() => {
     setErroLixeira('')
@@ -24,8 +27,8 @@ function Configuracoes({ token, role }) {
 
   useEffect(() => {
     setIsDark(document.documentElement.classList.contains('dark'))
-    carregarLixeira()
-  }, [carregarLixeira])
+    if (role === 'ADMIN') carregarLixeira()
+  }, [carregarLixeira, role])
 
   const handleRestaurar = (id) => {
     executar(async () => {
@@ -34,7 +37,7 @@ function Configuracoes({ token, role }) {
       headers: { 'Authorization': `Bearer ${token}` }
       })
       carregarLixeira()
-      alert('Produto restaurado e de volta ao inventário.')
+      await avisar('Produto restaurado e de volta ao inventário.', 'Produto restaurado')
     })
   }
 
@@ -71,9 +74,9 @@ function Configuracoes({ token, role }) {
 
       setNovaFuncionaria({ email: '', senha: '' })
       window.dispatchEvent(new Event('usuarios-alterados'))
-      alert('Funcionária cadastrada com sucesso.')
+      await avisar('Funcionária cadastrada com sucesso.', 'Acesso criado')
     } catch (error) {
-      alert(error.message)
+      await avisar(error.message)
     } finally {
       setSalvandoUsuario(false)
     }
@@ -151,7 +154,9 @@ function Configuracoes({ token, role }) {
 
         {role === 'ADMIN' && <AcessosFuncionarias token={token} />}
 
-        <div className="glass-panel p-6 md:col-span-2">
+        {role === 'ADMIN' && <AuditoriaPainel token={token} />}
+
+        {role === 'ADMIN' && <div className="glass-panel p-6 md:col-span-2">
           <div className="flex items-center gap-3 border-b border-current/20 pb-4 mb-4 opacity-90">
             <ArchiveX size={16} className="opacity-70" />
             <h2 className="text-xs font-bold uppercase tracking-widest">Arquivo Morto (Inativos)</h2>
@@ -185,7 +190,7 @@ function Configuracoes({ token, role }) {
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
       </div>
     </div>

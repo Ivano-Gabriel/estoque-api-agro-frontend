@@ -3,12 +3,14 @@ import API_URL from '../config/api'
 import FormProduto from '../components/FormProduto'
 import Navbar from '../components/Navbar'
 import FormQuantidade from '../components/FormQuantidade'
+import { useDialog } from '../components/dialog-context'
 
 function Dashboard({ token, onLogout }) {
   const [produtos, setProdutos] = useState([])
   const [mostrarForm, setMostrarForm] = useState(false)
   const [produtoSelecionado, setProdutoSelecionado] = useState(null)
   const [tipoAcao, setTipoAcao] = useState(null)
+  const { confirmar } = useDialog()
 
   useEffect(() => {
     fetch(API_URL + '/produtos', {
@@ -28,7 +30,7 @@ function Dashboard({ token, onLogout }) {
 
   
   async function deletarProduto(id) {
-    if (window.confirm("Tem certeza que deseja deletar este produto?")) {
+    if (await confirmar('Tem certeza que deseja deletar este produto?')) {
       await fetch(`${API_URL}/produtos/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + token }
