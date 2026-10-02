@@ -550,6 +550,8 @@ textarea.control-field {
 .payment-total { display:flex; align-items:end; justify-content:space-between; padding:1rem; color:var(--bg-color); background:var(--text-color); }.payment-total strong { font-size:1.7rem; }
 .payment-finish > div:first-child p { margin-top:.25rem; font-size:.8rem; opacity:.6; }
 .change-highlight { display:block; margin-top:.45rem; padding:.65rem; color:#047857; background:#10b98118; font-size:1rem; font-weight:950; text-align:center; }
+.cash-open-summary { display:grid; grid-template-columns:1fr; gap:.8rem 1.5rem; }
+.cash-open-summary strong { display:block; margin-top:.1rem; font-size:1.35rem; font-weight:950; }
 .finish-success { max-width:520px; align-items:stretch; }
 .finish-icon { display:grid; width:74px; height:74px; place-items:center; align-self:center; color:#047857; border-radius:99px; background:#10b9811f; }
 .finish-icon svg { width:42px; height:42px; }
@@ -574,6 +576,7 @@ textarea.control-field {
 .check-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.45rem; margin-top:.6rem; }.check-grid label { display:flex; min-height:48px; align-items:center; gap:.55rem; padding:.55rem; border:1px solid color-mix(in srgb,var(--text-color) 12%,transparent); font-weight:750; }.check-grid input { width:20px; height:20px; }
 
 @media (min-width:640px) {
+  .cash-open-summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .lanchonete-tabs { grid-template-columns:repeat(3,1fr); }
   .atendimento-tipos { grid-template-columns:repeat(4,1fr); }
   .mesa-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
