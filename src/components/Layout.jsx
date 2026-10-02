@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool, Users, ReceiptText, MoreHorizontal, X, ShoppingCart } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut, DollarSign, Menu, PackageSearch, PenTool, Users, ReceiptText, MoreHorizontal, X, ShoppingCart, UtensilsCrossed } from 'lucide-react'
 import { useState } from 'react'
 import RelatorioWhatsapp from './RelatorioWhatsapp'
 
@@ -10,15 +10,17 @@ function Layout({ role, loja, token, onLogout }) {
 
   const navItems = [
     { name: 'Hub', path: '/', icon: LayoutDashboard, adminOnly: true },
+    { name: 'Lanchonete', path: '/lanchonete', icon: UtensilsCrossed, lanchoneteOnly: true },
     { name: 'Vendas', path: '/pdv', icon: ShoppingCart },
     { name: 'Catálogo', path: '/produtos', icon: PackageSearch },
-    { name: 'Gerenciar', path: '/gerenciar', icon: PenTool },
+    { name: 'Gerenciar', path: '/gerenciar', icon: PenTool, adminOnly: true },
     { name: 'Caixa', path: '/lucro', icon: DollarSign, adminOnly: true },
     { name: 'Clientes', path: '/clientes', icon: Users },
-    { name: 'Notas fiscais', path: '/notas', icon: ReceiptText, adminOnly: true, notasOnly: true },
+    { name: 'Notas recebidas', path: '/notas', icon: ReceiptText, adminOnly: true, notasOnly: true },
     { name: 'Ajustes', path: '/config', icon: Settings },
-  ].filter(item => (!item.adminOnly || role === 'ADMIN') && (item.path !== '/lucro' || loja?.financeiroAtivo) && (!item.notasOnly || loja?.notasFiscaisAtivas))
-  const principaisMobile = navItems.filter(item => ['/pdv', '/produtos', '/gerenciar', '/clientes'].includes(item.path))
+  ].filter(item => (!item.adminOnly || role === 'ADMIN') && (item.path !== '/lucro' || loja?.financeiroAtivo) && (!item.notasOnly || loja?.notasFiscaisAtivas) && (!item.lanchoneteOnly || loja?.lanchoneteAtiva))
+  const caminhosPrincipais = loja?.lanchoneteAtiva ? ['/lanchonete', '/pdv', '/produtos', '/clientes'] : ['/pdv', '/produtos', '/gerenciar', '/clientes']
+  const principaisMobile = navItems.filter(item => caminhosPrincipais.includes(item.path))
   const extrasMobile = navItems.filter(item => !principaisMobile.includes(item))
 
   const LogoI = () => (

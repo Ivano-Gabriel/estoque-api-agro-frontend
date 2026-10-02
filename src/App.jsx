@@ -1,18 +1,22 @@
 import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { WifiOff } from 'lucide-react'
 import Login from './pages/Login'
 import Layout from './components/Layout'
-import Hub from './pages/Hub'
-import Produtos from './pages/Produtos'
-import Gerenciar from './pages/Gerenciar'
-import Lucro from './pages/Lucro'
-import Configuracoes from './pages/Configuracoes'
 import OperacaoPendente from './components/OperacaoPendente'
-import Plataforma from './pages/Plataforma'
-import Clientes from './pages/Clientes'
-import NotasRecebidas from './pages/NotasRecebidas'
-import Pdv from './pages/Pdv'
+
+const Hub = lazy(() => import('./pages/Hub'))
+const Produtos = lazy(() => import('./pages/Produtos'))
+const Gerenciar = lazy(() => import('./pages/Gerenciar'))
+const Lucro = lazy(() => import('./pages/Lucro'))
+const Configuracoes = lazy(() => import('./pages/Configuracoes'))
+const Plataforma = lazy(() => import('./pages/Plataforma'))
+const Clientes = lazy(() => import('./pages/Clientes'))
+const NotasRecebidas = lazy(() => import('./pages/NotasRecebidas'))
+const Pdv = lazy(() => import('./pages/Pdv'))
+const Lanchonete = lazy(() => import('./pages/Lanchonete'))
+
+const carregandoPagina = <div className="glass-panel empty-state m-4"><strong>Carregando...</strong></div>
 
 function App() {
   const [token, setToken] = useState(() => sessionStorage.getItem('accessToken'))
@@ -86,7 +90,7 @@ function App() {
         </div>
       )}
 
-      {!token ? (
+      <Suspense fallback={carregandoPagina}>{!token ? (
         <Login onLogin={entrar} aviso={avisoSessao} />
       ) : role === 'SUPER_ADMIN' ? (
         <Plataforma token={token} onLogout={sair} />
@@ -98,8 +102,9 @@ function App() {
               <Route index element={role === 'ADMIN' ? <Hub token={token} loja={loja} /> : <Navigate to="/produtos" replace />} />
               <Route path="produtos" element={<Produtos token={token} loja={loja} />} />
               <Route path="pdv" element={<Pdv token={token} loja={loja} />} />
+              <Route path="lanchonete" element={loja?.lanchoneteAtiva ? <Lanchonete token={token} loja={loja} role={role} /> : <Navigate to="/produtos" replace />} />
               <Route path="gerenciar" element={<Gerenciar token={token} role={role} loja={loja} />} />
-              <Route path="lucro" element={role === 'ADMIN' && loja?.financeiroAtivo ? <Lucro token={token} /> : <Navigate to="/produtos" replace />} />
+              <Route path="lucro" element={role === 'ADMIN' && loja?.financeiroAtivo ? <Lucro token={token} loja={loja} /> : <Navigate to="/produtos" replace />} />
               <Route path="clientes" element={<Clientes token={token} role={role} />} />
               <Route path="notas" element={role === 'ADMIN' && loja?.notasFiscaisAtivas ? <NotasRecebidas token={token} loja={loja} /> : <Navigate to="/produtos" replace />} />
               <Route path="config" element={<Configuracoes token={token} role={role} />} />
@@ -107,7 +112,7 @@ function App() {
             </Route>
           </Routes>
         </BrowserRouter>
-      )}
+      )}</Suspense>
     </>
   )
 }

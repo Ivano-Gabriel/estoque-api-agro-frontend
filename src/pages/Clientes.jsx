@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Archive, Heart, MessageCircle, Pencil, Plus, Search, ShoppingBag, UserRound, X } from 'lucide-react'
+import { Archive, Download, Heart, MessageCircle, Pencil, Plus, Search, ShoppingBag, UserRound, UserX, X } from 'lucide-react'
 import API_URL, { apiFetch } from '../config/api'
+import { useDialog } from '../components/dialog-context'
 
 const vazio = { nome: '', telefone: '', email: '', observacoes: '', produtoFavoritoIds: [] }
 
 export default function Clientes({ token, role }) {
+  const { confirmar, avisar } = useDialog()
   const [clientes, setClientes] = useState([])
   const [produtos, setProdutos] = useState([])
   const [busca, setBusca] = useState('')
@@ -56,9 +58,21 @@ export default function Clientes({ token, role }) {
     } catch (e) { setErro(e.message) }
   }
   async function arquivar(id) {
-    if (!confirm('Arquivar este cliente? O histórico de vendas será preservado.')) return
+    if (!await confirmar('Arquivar este cliente? O histórico de vendas será preservado.')) return
     try { await apiFetch(`${API_URL}/clientes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }); setDetalhe(null); await carregar() }
     catch (e) { setErro(e.message) }
+  }
+  async function exportar(id) {
+    try {
+      const resposta = await apiFetch(`${API_URL}/clientes/${id}/exportacao`, { headers:{Authorization:`Bearer ${token}`} })
+      const url=URL.createObjectURL(new Blob([JSON.stringify(await resposta.json(),null,2)],{type:'application/json'}))
+      const link=document.createElement('a');link.href=url;link.download=`cliente-${id}.json`;link.click();URL.revokeObjectURL(url)
+    } catch(e){await avisar(e.message)}
+  }
+  async function anonimizar(id) {
+    if(!await confirmar('Anonimizar definitivamente nome, telefone, e-mail e observações? O histórico financeiro será preservado sem identificar a pessoa.','Ação irreversível'))return
+    try{await apiFetch(`${API_URL}/clientes/${id}/anonimizacao`,{method:'POST',headers:{Authorization:`Bearer ${token}`}});setDetalhe(null);await carregar();await avisar('Dados pessoais anonimizados.','Privacidade')}
+    catch(e){await avisar(e.message)}
   }
 
   return <div className="page-shell max-w-6xl mx-auto space-y-6 pb-32 md:pb-8">
@@ -77,7 +91,7 @@ export default function Clientes({ token, role }) {
       {detalhe.observacoes && <section className="detail-section"><h3>Observações</h3><p>{detalhe.observacoes}</p></section>}
       <section className="detail-section"><h3 className="flex items-center gap-2"><Heart size={18}/> Produtos favoritos</h3>{detalhe.favoritos.length ? <div className="flex flex-wrap gap-2 mt-3">{detalhe.favoritos.map(item => <span className="chip" key={item.id}>{item.nome}</span>)}</div> : <p>Nenhum favorito marcado.</p>}</section>
       <section className="detail-section"><h3 className="flex items-center gap-2"><ShoppingBag size={18}/> Mais comprados</h3>{detalhe.maisComprados.length ? <div className="mt-3 space-y-2">{detalhe.maisComprados.map((item, index) => <div key={item.id} className="flex justify-between text-base"><span>{index+1}. {item.nome}</span><strong>{item.quantidade} un.</strong></div>)}</div> : <p>As compras aparecerão aqui quando o cliente for selecionado nas vendas.</p>}</section>
-      {role === 'ADMIN' && <button onClick={() => arquivar(detalhe.id)} className="w-full mobile-action border border-rose-500/40 text-rose-500 flex justify-center items-center gap-2"><Archive size={18}/> Arquivar cliente</button>}
+      {role === 'ADMIN' && <div className="grid sm:grid-cols-3 gap-2"><button onClick={() => exportar(detalhe.id)} className="mobile-action border border-current/20 flex justify-center items-center gap-2"><Download size={18}/> Exportar dados</button><button onClick={() => arquivar(detalhe.id)} className="mobile-action border border-rose-500/40 text-rose-500 flex justify-center items-center gap-2"><Archive size={18}/> Arquivar</button><button onClick={() => anonimizar(detalhe.id)} className="mobile-action border border-rose-500/40 text-rose-500 flex justify-center items-center gap-2"><UserX size={18}/> Anonimizar</button></div>}
     </div></div>}
 
     {modal && <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/85 sm:p-4"><form onSubmit={salvar} className="glass-panel !bg-[var(--bg-color)] w-full sm:max-w-2xl rounded-t-2xl sm:rounded-sm p-5 sm:p-7 space-y-5 max-h-[94vh] overflow-y-auto">

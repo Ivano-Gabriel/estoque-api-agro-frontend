@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import API_URL, { apiFetch } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
+import { useDialog } from './dialog-context'
 
 export default function AcessosFuncionarias({ token }) {
   const [usuarios, setUsuarios] = useState([])
@@ -8,6 +9,7 @@ export default function AcessosFuncionarias({ token }) {
   const [selecionada, setSelecionada] = useState(null)
   const [senha, setSenha] = useState('')
   const { enviando, executar } = useOperacao()
+  const { avisar, confirmar } = useDialog()
   const carregar = useCallback(async () => {
     try {
       const response = await apiFetch(`${API_URL}/admin/usuarios`, { headers: { Authorization: `Bearer ${token}` } })
@@ -26,7 +28,7 @@ export default function AcessosFuncionarias({ token }) {
       ...(body ? { body: JSON.stringify(body) } : {})
     })
     setSenha(''); setSelecionada(null); await carregar()
-    alert('Acesso atualizado. As sessões anteriores foram encerradas.')
+    await avisar('Acesso atualizado. As sessões anteriores foram encerradas.', 'Acesso protegido')
   })
 
   return <section className="glass-panel p-6 md:col-span-2 space-y-4">
@@ -37,11 +39,11 @@ export default function AcessosFuncionarias({ token }) {
     {usuarios.map(usuario => <div key={usuario.id} className="border border-current/20 p-4 space-y-3">
       <p className="break-all">{usuario.email} — {usuario.ativo ? 'Ativo' : 'Bloqueado'}</p>
       <div className="flex flex-wrap gap-2">
-        <button disabled={enviando} className="btn-secondary p-2 text-sm" onClick={() => {
-          if (confirm(`${usuario.ativo ? 'Bloquear' : 'Liberar'} o acesso de ${usuario.email}?`)) alterar(usuario, 'acesso', 'PUT', { ativo: !usuario.ativo })
+        <button disabled={enviando} className="btn-secondary p-2 text-sm" onClick={async () => {
+          if (await confirmar(`${usuario.ativo ? 'Bloquear' : 'Liberar'} o acesso de ${usuario.email}?`)) alterar(usuario, 'acesso', 'PUT', { ativo: !usuario.ativo })
         }}>{usuario.ativo ? 'Bloquear acesso' : 'Liberar acesso'}</button>
-        <button disabled={enviando} className="btn-secondary p-2 text-sm" onClick={() => {
-          if (confirm(`Encerrar as sessões de ${usuario.email}?`)) alterar(usuario, 'revogar-sessoes', 'POST')
+        <button disabled={enviando} className="btn-secondary p-2 text-sm" onClick={async () => {
+          if (await confirmar(`Encerrar as sessões de ${usuario.email}?`)) alterar(usuario, 'revogar-sessoes', 'POST')
         }}>Encerrar sessões</button>
         <button disabled={enviando} className="btn-secondary p-2 text-sm" onClick={() => { setSelecionada(usuario.id); setSenha('') }}>Trocar senha</button>
       </div>

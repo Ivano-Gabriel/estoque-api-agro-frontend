@@ -16,12 +16,18 @@ export async function apiFetch(url, options = {}) {
     if (!response.ok && !respostaComErrosPorLinha) {
       const text = await response.text()
       let mensagem
-      try { mensagem = JSON.parse(text).erro } catch { /* pode ser texto simples */ }
+      let codigo
+      try {
+        const dados = JSON.parse(text)
+        mensagem = dados.erro
+        codigo = dados.codigo || dados.erro
+      } catch { /* pode ser texto simples */ }
       const error = new Error(response.status === 401
         ? (url.endsWith('/auth/login') ? 'E-mail ou senha incorretos.' : 'Sua sessão expirou. Entre novamente.')
         : response.status === 403 ? 'Seu perfil não tem permissão para esta ação.'
           : mensagem || (text && !text.startsWith('<') && text.length < 250 ? text : 'Não foi possível concluir. Tente novamente.'))
       error.status = response.status
+      error.code = codigo
       throw error
     }
     return response

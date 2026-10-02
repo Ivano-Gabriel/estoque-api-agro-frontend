@@ -5,6 +5,8 @@ import { enviarMovimentacao } from '../config/api'
 import useOperacao from '../hooks/useOperacao'
 import { imagemProdutoUrl } from '../utils/cloudinary'
 import ComprovanteVendaModal from '../components/ComprovanteVendaModal'
+import { useDialog } from '../components/dialog-context'
+import { useNavigate } from 'react-router-dom'
 
 function Produtos({ token, loja }) {
   const [produtos, setProdutos] = useState([])
@@ -12,11 +14,13 @@ function Produtos({ token, loja }) {
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
   const { enviando, executar } = useOperacao()
+  const { avisar } = useDialog()
+  const navigate = useNavigate()
   
   const [busca, setBusca] = useState('')
   const [categoriaSelecionada, setCategoriaSelecionada] = useState('Todas')
   
-  const [produtoSelecionado, setProdutoSelecionado] = useState(null)
+  const [produtoSelecionado] = useState(null)
   const [modalAberto, setModalAberto] = useState(false)
   const [formVender, setFormVender] = useState({ quantidade: '', precoVenda: '', clienteId: '' })
   const [comprovante, setComprovante] = useState(null)
@@ -46,24 +50,22 @@ function Produtos({ token, loja }) {
   const categorias = ['Todas', ...new Set(produtos.map(p => p.categoria?.nome).filter(Boolean)), 'Sem Categoria']
 
   const produtosFiltrados = produtos.filter(p => {
-    const nomeMatch = p.nome.toLowerCase().includes(busca.toLowerCase())
+    const nomeMatch = `${p.nome} ${p.sku || ''} ${p.codigoBarras || ''} ${p.variacao || ''}`.toLowerCase().includes(busca.toLowerCase())
     const catNome = p.categoria?.nome || 'Sem Categoria'
     const catMatch = categoriaSelecionada === 'Todas' || catNome === categoriaSelecionada
     return nomeMatch && catMatch
   })
 
   function abrirModalVender(produto) {
-    setProdutoSelecionado(produto)
-    setFormVender({ quantidade: 1, precoVenda: produto.preco, clienteId: '' })
-    setModalAberto(true)
+    navigate(`/pdv?busca=${encodeURIComponent(produto.nome)}`)
   }
 
-  function handleVender() {
+  async function handleVender() {
     const qtd = Number(formVender.quantidade)
     const preco = loja?.financeiroAtivo ? parseFloat(formVender.precoVenda) : 0
 
     if (!Number.isSafeInteger(qtd) || qtd <= 0 || (loja?.financeiroAtivo && (!preco || preco <= 0))) {
-      alert(loja?.financeiroAtivo ? 'Preencha quantidade e preço corretamente.' : 'Preencha uma quantidade válida.')
+      await avisar(loja?.financeiroAtivo ? 'Preencha quantidade e preço corretamente.' : 'Preencha uma quantidade válida.')
       return
     }
 
@@ -94,7 +96,7 @@ function Produtos({ token, loja }) {
         <div className="relative">
           <Search size={22} className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40" />
           <input
-            placeholder="Buscar produto por nome..."
+            placeholder="Nome, SKU ou código de barras..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
             className="w-full pl-12 pr-4 py-3.5 bg-transparent border border-current/20 rounded-sm focus:outline-none focus:border-current text-lg font-bold tracking-wider transition-all placeholder:opacity-30"
@@ -142,7 +144,7 @@ function Produtos({ token, loja }) {
                 <span className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
                   {p.categoria?.nome || 'Sem Categoria'}
                 </span>
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-widest ${p.quantidadeEstoque <= 5 ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-current/10 opacity-70 border border-current/20'}`}>
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-sm uppercase tracking-widest ${p.quantidadeEstoque <= (p.estoqueMinimo ?? 5) ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 'bg-current/10 opacity-70 border border-current/20'}`}>
                   {p.quantidadeEstoque} {p.tipo}
                 </span>
               </div>
@@ -150,6 +152,7 @@ function Produtos({ token, loja }) {
               <h3 className="font-bold text-lg leading-tight mb-6 flex-1 group-hover:opacity-70 transition-opacity uppercase tracking-wider">
                 {p.nome}
               </h3>
+              {(p.variacao || p.sku) && <p className="text-xs font-bold opacity-50 mb-2">{[p.variacao, p.sku && `SKU ${p.sku}`].filter(Boolean).join(' • ')}</p>}
               {p.descricao && <p className="text-xs opacity-55 line-clamp-2 mb-4">{p.descricao}</p>}
 
               <div className="flex items-center justify-between mt-auto pt-4 border-t border-current/10">

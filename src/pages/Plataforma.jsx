@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Building2, LogOut, Plus, ShieldCheck } from 'lucide-react'
 import API_URL, { apiFetch as fetch } from '../config/api'
+import { useDialog } from '../components/dialog-context'
+
+const formularioVazio = { nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, notasFiscaisAtivas: false, caixaOperacionalAtivo: false, lanchoneteAtiva: false, whatsapp: '', adminEmail: '', adminSenha: '' }
 
 function Plataforma({ token, onLogout }) {
   const [lojas, setLojas] = useState([])
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
-  const [form, setForm] = useState({ nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, notasFiscaisAtivas: false, whatsapp: '', adminEmail: '', adminSenha: '' })
+  const [form, setForm] = useState(formularioVazio)
+  const { solicitar } = useDialog()
 
   const carregar = useCallback(async () => {
     try {
@@ -25,7 +29,7 @@ function Plataforma({ token, onLogout }) {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      setForm({ nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, notasFiscaisAtivas: false, whatsapp: '', adminEmail: '', adminSenha: '' })
+      setForm(formularioVazio)
       await carregar()
     } catch (e) { setErro(e.message) } finally { setSalvando(false) }
   }
@@ -36,6 +40,22 @@ function Plataforma({ token, onLogout }) {
       await fetch(`${API_URL}${url}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       await carregar()
     } catch (e) { setErro(e.message) }
+  }
+
+  const configuracao = (loja, mudanca = {}) => ({
+    nome: loja.nome,
+    financeiroAtivo: loja.financeiroAtivo,
+    fotosAtivas: loja.fotosAtivas,
+    notasFiscaisAtivas: loja.notasFiscaisAtivas,
+    caixaOperacionalAtivo: loja.caixaOperacionalAtivo,
+    lanchoneteAtiva: loja.lanchoneteAtiva,
+    whatsapp: loja.whatsapp || '',
+    ...mudanca,
+  })
+
+  async function alterarTexto(loja, campo, mensagem) {
+    const valor = await solicitar(mensagem, loja[campo] || '')
+    if (valor !== false && valor.trim()) await atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { [campo]: valor.trim() }))
   }
 
   return <main className="min-h-screen bg-dinamico bg-cover p-4 md:p-8 text-current">
@@ -56,6 +76,8 @@ function Plataforma({ token, onLogout }) {
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.financeiroAtivo} onChange={e => setForm({...form, financeiroAtivo:e.target.checked})}/> Ativar módulo financeiro</label>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.fotosAtivas} onChange={e => setForm({...form, fotosAtivas:e.target.checked})}/> Ativar fotos de produtos</label>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.notasFiscaisAtivas} onChange={e => setForm({...form, notasFiscaisAtivas:e.target.checked})}/> Ativar notas recebidas</label>
+          <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.caixaOperacionalAtivo} onChange={e => setForm({...form, caixaOperacionalAtivo:e.target.checked})}/> Ativar abertura e fechamento de caixa</label>
+          <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.lanchoneteAtiva} onChange={e => setForm({...form, lanchoneteAtiva:e.target.checked})}/> Ativar modo lanchonete</label>
           {erro && <p role="alert" className="text-rose-500 text-sm">{erro}</p>}
           <button disabled={salvando} className="btn-primary w-full p-3 font-bold uppercase tracking-widest">{salvando ? 'Criando...' : 'Criar loja'}</button>
         </form>
@@ -65,15 +87,17 @@ function Plataforma({ token, onLogout }) {
           {lojas.map(loja => <div key={loja.id} className="border border-current/15 p-4 space-y-3">
             <div className="flex justify-between gap-3">
             <div><strong>{loja.nome}</strong><p className="text-xs opacity-50">{loja.slug}</p></div>
-            <div className="text-right text-xs"><p>{loja.ativa ? 'Ativa' : 'Bloqueada'}</p><p className="opacity-50">{loja.financeiroAtivo ? 'Com financeiro' : 'Sem financeiro'}</p><p className="opacity-50">{loja.fotosAtivas ? 'Com fotos' : 'Sem fotos'}</p><p className="opacity-50">{loja.notasFiscaisAtivas ? 'Com notas' : 'Sem notas'}</p></div>
+            <div className="text-right text-xs"><p>{loja.ativa ? 'Ativa' : 'Bloqueada'}</p><p className="opacity-50">{loja.financeiroAtivo ? 'Com financeiro' : 'Sem financeiro'}</p><p className="opacity-50">{loja.fotosAtivas ? 'Com fotos' : 'Sem fotos'}</p><p className="opacity-50">{loja.notasFiscaisAtivas ? 'Com notas recebidas' : 'Sem notas recebidas'}</p><p className="opacity-50">{loja.caixaOperacionalAtivo ? 'Caixa por operadora' : 'Caixa acumulado'}</p><p className="opacity-50">{loja.lanchoneteAtiva ? 'Modo lanchonete ativo' : 'Estoque e varejo'}</p></div>
             </div>
             <div className="flex flex-wrap gap-2 text-[10px] uppercase font-bold tracking-wider">
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/status`, { ativa: !loja.ativa })}>{loja.ativa ? 'Bloquear' : 'Reativar'}</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: !loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, whatsapp: loja.whatsapp })}>{loja.financeiroAtivo ? 'Desligar financeiro' : 'Ligar financeiro'}</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: !loja.fotosAtivas, whatsapp: loja.whatsapp })}>{loja.fotosAtivas ? 'Desligar fotos' : 'Ligar fotos'}</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, notasFiscaisAtivas: !loja.notasFiscaisAtivas, whatsapp: loja.whatsapp })}>{loja.notasFiscaisAtivas ? 'Desligar notas' : 'Ligar notas'}</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => { const numero = window.prompt('WhatsApp com DDI e DDD:', loja.whatsapp || ''); if (numero !== null) atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome: loja.nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, whatsapp: numero }) }}>Alterar WhatsApp</button>
-              <button className="btn-secondary px-3 py-2" onClick={() => { const nome = window.prompt('Nome da loja:', loja.nome); if (nome) atualizar(`/plataforma/lojas/${loja.id}/configuracao`, { nome, financeiroAtivo: loja.financeiroAtivo, fotosAtivas: loja.fotosAtivas, whatsapp: loja.whatsapp }) }}>Renomear</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { financeiroAtivo: !loja.financeiroAtivo }))}>{loja.financeiroAtivo ? 'Desligar financeiro' : 'Ligar financeiro'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { fotosAtivas: !loja.fotosAtivas }))}>{loja.fotosAtivas ? 'Desligar fotos' : 'Ligar fotos'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { lanchoneteAtiva: !loja.lanchoneteAtiva }))}>{loja.lanchoneteAtiva ? 'Desligar lanchonete' : 'Ligar lanchonete'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { notasFiscaisAtivas: !loja.notasFiscaisAtivas }))}>{loja.notasFiscaisAtivas ? 'Desligar notas' : 'Ligar notas'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { caixaOperacionalAtivo: !loja.caixaOperacionalAtivo }))}>{loja.caixaOperacionalAtivo ? 'Desligar caixa real' : 'Ligar caixa real'}</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => alterarTexto(loja, 'whatsapp', 'WhatsApp com DDI e DDD')}>Alterar WhatsApp</button>
+              <button className="btn-secondary px-3 py-2" onClick={() => alterarTexto(loja, 'nome', 'Nome da loja')}>Renomear</button>
             </div>
           </div>)}
         </div>
