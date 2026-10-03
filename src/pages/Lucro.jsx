@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
-import API_URL, { apiFetch as fetch } from '../config/api'
+import API_URL, { apiFetch } from '../config/api'
 import { TrendingUp, TrendingDown, Wallet, Activity, ArrowUpRight, ArrowDownRight, Receipt, BadgeDollarSign, Ban, Printer, CreditCard, RotateCcw, Download, Search } from 'lucide-react'
 import { imprimirComprovantePdv } from '../utils/impressao'
 import { useDialog } from '../components/dialog-context'
 import DevolucaoVendaModal from '../components/DevolucaoVendaModal'
 import CaixaAdministracao from '../components/CaixaAdministracao'
+import { combinarResultadosFinanceiros } from '../utils/financeiro'
 
 function Lucro({ token, loja }) {
   const [movimentacoes, setMovimentacoes] = useState([])
   const [fluxo, setFluxo] = useState({ totalEntradas: 0, totalSaidas: 0, saldoLiquido: 0 })
   const [carregando, setCarregando] = useState(true)
   const [erroCarga, setErroCarga] = useState('')
+  const [erroAcao, setErroAcao] = useState('')
+  const [avisosCarga, setAvisosCarga] = useState([])
   const [vendas, setVendas] = useState([])
   const [paginaVendas, setPaginaVendas] = useState(null)
   const [devolvendo, setDevolvendo] = useState(null)
@@ -27,14 +30,22 @@ function Lucro({ token, loja }) {
   },[consulta])
 
   const carregar = useCallback(async () => {
-    setCarregando(true); setErroCarga('')
+    setCarregando(true); setErroCarga(''); setAvisosCarga([])
     try {
-      const [resTransacoes, resFluxo, resVendas] = await Promise.all([
-        fetch(API_URL + '/transacoes', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(API_URL + '/fluxo-caixa', { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(urlVendas(), { headers: { 'Authorization': `Bearer ${token}` } })
-      ])
-      const data = await resTransacoes.json()
+      const consultar = async url => {
+        const resposta = await apiFetch(url, { headers: { Authorization: `Bearer ${token}` } })
+        return resposta.json()
+      }
+      const resultado = combinarResultadosFinanceiros(await Promise.allSettled([
+        consultar(`${API_URL}/transacoes?limite=200`),
+        consultar(`${API_URL}/fluxo-caixa`),
+        consultar(urlVendas())
+      ]))
+      if (resultado.falhaTotal) {
+        throw new Error('Os dados financeiros estão temporariamente indisponíveis. Tente novamente.')
+      }
+      setAvisosCarga(resultado.falhas)
+      const data = resultado.transacoes
       const movs = data.filter(t => !t.estornada).map(t => ({
         id: t.id,
         tipo: t.tipo,
@@ -47,16 +58,17 @@ function Lucro({ token, loja }) {
         data: new Date(t.data).toLocaleDateString('pt-BR')
       }))
       setMovimentacoes(movs)
-      const caixa = await resFluxo.json()
+      const caixa = resultado.fluxo
       setFluxo({
         totalEntradas: Number(caixa.totalEntradas || 0),
         totalSaidas: Number(caixa.totalSaidas || 0),
         saldoLiquido: Number(caixa.saldoLiquido || 0),
+        lucroBruto: Number(caixa.lucroBruto || 0),
         recebimentosPorForma: caixa.recebimentosPorForma || {}
       })
-      const pagina = await resVendas.json()
+      const pagina = resultado.paginaVendas
       setPaginaVendas(pagina)
-      setVendas(pagina.itens || [])
+      setVendas(pagina?.itens || [])
     } catch (err) { setErroCarga(err.message) } finally { setCarregando(false) }
   }, [token, urlVendas])
 
@@ -65,27 +77,27 @@ function Lucro({ token, loja }) {
   async function cancelar(venda) {
     const motivo = await solicitar('Por que esta venda será cancelada? O estoque e o caixa serão estornados.', '', 'Cancelar venda')
     if (!motivo) return
+    setErroAcao('')
     try {
-      await fetch(`${API_URL}/vendas/${venda.id}/cancelamento`, { method:'PUT', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({motivo}) })
+      await apiFetch(`${API_URL}/vendas/${venda.id}/cancelamento`, { method:'PUT', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({motivo}) })
       await carregar()
-    } catch (e) { setErroCarga(e.message) }
+    } catch (e) { setErroAcao(e.message) }
   }
 
   async function exportarVendas(){
-    try{let pagina=0,ultima=false,todas=[];while(!ultima&&pagina<100){const r=await fetch(urlVendas(pagina),{headers:{Authorization:`Bearer ${token}`}});const dados=await r.json();todas.push(...dados.itens);ultima=dados.ultima;pagina++}const limpar=v=>`"${String(v??'').replaceAll('"','""')}"`;const linhas=[['Data','Código','Cliente','Atendente','Status','Pagamento','Total','Devolvido','Líquido'],...todas.map(v=>[new Date(v.criadaEm).toLocaleString('pt-BR'),v.id,v.cliente||'',v.atendente,v.status,v.formaPagamentoLabel,v.total,v.totalDevolvido,v.totalLiquido])];const csv='\ufeff'+linhas.map(l=>l.map(limpar).join(';')).join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`vendas-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url)}catch(e){setErroCarga(e.message)}
+    setErroAcao('')
+    try{let pagina=0,ultima=false,todas=[];while(!ultima&&pagina<100){const r=await apiFetch(urlVendas(pagina),{headers:{Authorization:`Bearer ${token}`}});const dados=await r.json();todas.push(...(dados.itens||[]));ultima=dados.ultima;pagina++}const limpar=v=>`"${String(v??'').replaceAll('"','""')}"`;const linhas=[['Data','Código','Cliente','Atendente','Status','Pagamento','Total','Devolvido','Líquido'],...todas.map(v=>[new Date(v.criadaEm).toLocaleString('pt-BR'),v.id,v.cliente||'',v.atendente,v.status,v.formaPagamentoLabel,v.total,v.totalDevolvido,v.totalLiquido])];const csv='\ufeff'+linhas.map(l=>l.map(limpar).join(';')).join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download=`vendas-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(url)}catch(e){setErroAcao(e.message)}
   }
 
   const { totalEntradas, totalSaidas, saldoLiquido: saldo } = fluxo
   const totalMovimentado = totalEntradas + totalSaidas > 0 ? totalEntradas + totalSaidas : 1
   const percentualLucro = (totalEntradas / totalMovimentado) * 100
-  const lucroReal = movimentacoes
-    .filter(mov => mov.tipo === 'VENDA' || mov.tipo === 'DEVOLUCAO')
-    .reduce((total, mov) => total + mov.lucro, 0)
+  const lucroReal = Number(fluxo.lucroBruto || 0)
 
-  const formatarMoeda = (valor) => valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const formatarMoeda = (valor) => Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const rotulosForma = { PIX:'PIX', DINHEIRO:'Dinheiro', CARTAO_DEBITO:'Cartão de débito', CARTAO_CREDITO:'Cartão de crédito', OUTRO:'Outro', NAO_INFORMADO:'Não informado' }
 
-  if (erroCarga) return <div role="alert" className="glass-panel p-6"><p>{erroCarga}</p><button className="btn-primary p-3 mt-4" onClick={() => window.location.reload()}>Tentar novamente</button></div>
+  if (erroCarga) return <div role="alert" className="glass-panel p-6"><p>{erroCarga}</p><button className="btn-primary p-3 mt-4" onClick={carregar}>Tentar novamente</button></div>
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 text-current relative z-10 pb-24 md:pb-8">
@@ -96,6 +108,9 @@ function Lucro({ token, loja }) {
           <p className="opacity-50 mt-1 font-mono text-[11px] uppercase tracking-widest">Inteligência Financeira</p>
         </div>
       </header>
+
+      {avisosCarga.length > 0 && <div role="status" className="border border-amber-500/40 bg-amber-500/10 p-4 text-sm"><strong>O caixa abriu, mas alguns dados não responderam.</strong><p className="opacity-70 mt-1">{avisosCarga.join(' • ')}</p><button className="btn-secondary mt-3 p-2" onClick={carregar}>Tentar carregar novamente</button></div>}
+      {erroAcao && <div role="alert" className="error-box"><span>{erroAcao}</span><button className="underline ml-3" onClick={() => setErroAcao('')}>Fechar</button></div>}
 
       {carregando ? (
         <div className="flex flex-col items-center justify-center py-20 opacity-40 space-y-4">
@@ -169,8 +184,8 @@ function Lucro({ token, loja }) {
           <div className="glass-panel overflow-hidden mt-6">
             <div className="p-6 border-b border-current/10"><h3 className="font-black text-lg">Histórico de vendas</h3><p className="text-sm opacity-55">Reimpressão e cancelamento seguro</p></div>
             <form onSubmit={e=>{e.preventDefault();setConsulta({...filtros})}} className="p-4 grid sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_auto_auto] gap-2 border-b border-current/10"><input className="control-field" placeholder="Cliente ou código" value={filtros.busca} onChange={e=>setFiltros({...filtros,busca:e.target.value})}/><select className="control-field" value={filtros.status} onChange={e=>setFiltros({...filtros,status:e.target.value})}><option value="">Todos os status</option><option value="CONCLUIDA">Concluída</option><option value="PARCIALMENTE_DEVOLVIDA">Parcialmente devolvida</option><option value="DEVOLVIDA">Devolvida</option><option value="CANCELADA">Cancelada</option></select><input aria-label="Data inicial" type="date" className="control-field" value={filtros.inicio} onChange={e=>setFiltros({...filtros,inicio:e.target.value})}/><input aria-label="Data final" type="date" className="control-field" value={filtros.fim} onChange={e=>setFiltros({...filtros,fim:e.target.value})}/><button className="btn-primary mobile-action flex justify-center gap-2"><Search size={18}/> Filtrar</button><button type="button" onClick={exportarVendas} className="btn-secondary mobile-action flex justify-center gap-2"><Download size={18}/> CSV</button></form>
-            {!vendas.length ? <div className="empty-state !min-h-40"><Receipt/><strong>Nenhuma venda registrada</strong></div> : <div className="divide-y divide-current/10">{vendas.map(venda => <div key={venda.id} className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${venda.status==='CANCELADA'?'opacity-50':''}`}><div><div className="flex items-center gap-2 flex-wrap"><strong>{venda.itens.reduce((s,i)=>s+i.quantidade,0)} itens • R$ {formatarMoeda(Number(venda.totalLiquido ?? venda.total))}</strong>{venda.status!=='CONCLUIDA'&&<span className="status-pending">{venda.status.replaceAll('_',' ')}</span>}</div><p className="text-sm opacity-55 mt-1">{new Date(venda.criadaEm).toLocaleString('pt-BR')} • {venda.formaPagamentoLabel}{venda.cliente?` • ${venda.cliente}`:''}</p>{Number(venda.totalDevolvido)>0&&<p className="text-sm text-amber-600 mt-1">Devolvido: R$ {formatarMoeda(Number(venda.totalDevolvido))}</p>}</div><div className="flex gap-2"><button onClick={()=>imprimirComprovantePdv(venda)} className="touch-button border border-current/20" title="Reimprimir"><Printer size={19}/></button>{!['CANCELADA','DEVOLVIDA'].includes(venda.status)&&<button onClick={()=>setDevolvendo(venda)} className="touch-button border border-amber-500/30 text-amber-600" title="Troca ou devolução"><RotateCcw size={19}/></button>}{venda.status==='CONCLUIDA'&&<button onClick={()=>cancelar(venda)} className="touch-button border border-rose-500/30 text-rose-500" title="Cancelar venda"><Ban size={19}/></button>}</div></div>)}</div>}
-            {paginaVendas&&!paginaVendas.ultima&&<button className="btn-secondary mobile-action m-5" onClick={async()=>{const r=await fetch(urlVendas(paginaVendas.pagina+1),{headers:{Authorization:`Bearer ${token}`}});const p=await r.json();setVendas(v=>[...v,...p.itens]);setPaginaVendas(p)}}>Carregar mais vendas</button>}
+            {!vendas.length ? <div className="empty-state !min-h-40"><Receipt/><strong>Nenhuma venda registrada</strong></div> : <div className="divide-y divide-current/10">{vendas.map(venda => <div key={venda.id} className={`p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${venda.status==='CANCELADA'?'opacity-50':''}`}><div><div className="flex items-center gap-2 flex-wrap"><strong>{(venda.itens || []).reduce((s,i)=>s+Number(i.quantidade || 0),0)} itens • R$ {formatarMoeda(venda.totalLiquido ?? venda.total)}</strong>{venda.status!=='CONCLUIDA'&&<span className="status-pending">{String(venda.status || 'DESCONHECIDA').replaceAll('_',' ')}</span>}</div><p className="text-sm opacity-55 mt-1">{new Date(venda.criadaEm).toLocaleString('pt-BR')} • {venda.formaPagamentoLabel || 'Pagamento não informado'}{venda.cliente?` • ${venda.cliente}`:''}</p>{Number(venda.totalDevolvido)>0&&<p className="text-sm text-amber-600 mt-1">Devolvido: R$ {formatarMoeda(venda.totalDevolvido)}</p>}</div><div className="flex gap-2"><button onClick={()=>imprimirComprovantePdv(venda)} className="touch-button border border-current/20" title="Reimprimir"><Printer size={19}/></button>{!['CANCELADA','DEVOLVIDA'].includes(venda.status)&&<button onClick={()=>setDevolvendo(venda)} className="touch-button border border-amber-500/30 text-amber-600" title="Troca ou devolução"><RotateCcw size={19}/></button>}{venda.status==='CONCLUIDA'&&<button onClick={()=>cancelar(venda)} className="touch-button border border-rose-500/30 text-rose-500" title="Cancelar venda"><Ban size={19}/></button>}</div></div>)}</div>}
+            {paginaVendas&&!paginaVendas.ultima&&<button className="btn-secondary mobile-action m-5" onClick={async()=>{try{const r=await apiFetch(urlVendas(paginaVendas.pagina+1),{headers:{Authorization:`Bearer ${token}`}});const p=await r.json();setVendas(v=>[...v,...(p.itens||[])]);setPaginaVendas(p)}catch(e){setAvisosCarga([`Mais vendas: ${e.message}`])}}}>Carregar mais vendas</button>}
           </div>
 
           <div className="glass-panel overflow-hidden mt-6">
