@@ -33,11 +33,11 @@ function Layout({ role, loja, token, onLogout }) {
     <>
       {/* CAMADA BLINDADA QUE TROCA DE FOTO SOZINHA */}
       <div 
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-dinamico transition-all duration-700"
+        className={`fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-dinamico transition-all duration-700 ${loja?.temaLanchoneteAtivo ? 'tema-lanchonete' : ''}`}
       ></div>
 
       {/* SISTEMA (Fica por cima da imagem) */}
-      <div className="min-h-screen flex relative z-10 text-current">
+      <div className={`min-h-screen flex relative z-10 text-current ${loja?.temaLanchoneteAtivo ? 'tema-lanchonete' : ''}`}>
         
         <aside className="hidden md:flex glass-panel shrink-0 w-20 lg:w-64 flex-col justify-between py-6 px-4 m-4 mr-0 transition-all duration-300 !border-l-0 border-r">
           <div>

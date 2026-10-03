@@ -3,7 +3,7 @@ import { Building2, LogOut, Plus, ShieldCheck } from 'lucide-react'
 import API_URL, { apiFetch as fetch } from '../config/api'
 import { useDialog } from '../components/dialog-context'
 
-const formularioVazio = { nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, notasFiscaisAtivas: false, caixaOperacionalAtivo: false, lanchoneteAtiva: false, whatsapp: '', adminEmail: '', adminSenha: '' }
+const formularioVazio = { nome: '', slug: '', financeiroAtivo: false, fotosAtivas: false, notasFiscaisAtivas: false, caixaOperacionalAtivo: false, lanchoneteAtiva: false, temaLanchoneteAtivo: false, whatsapp: '', adminEmail: '', adminSenha: '' }
 
 function Plataforma({ token, onLogout }) {
   const [lojas, setLojas] = useState([])
@@ -49,6 +49,7 @@ function Plataforma({ token, onLogout }) {
     notasFiscaisAtivas: loja.notasFiscaisAtivas,
     caixaOperacionalAtivo: loja.caixaOperacionalAtivo,
     lanchoneteAtiva: loja.lanchoneteAtiva,
+    temaLanchoneteAtivo: loja.temaLanchoneteAtivo,
     whatsapp: loja.whatsapp || '',
     ...mudanca,
   })
@@ -78,6 +79,7 @@ function Plataforma({ token, onLogout }) {
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.notasFiscaisAtivas} onChange={e => setForm({...form, notasFiscaisAtivas:e.target.checked})}/> Ativar notas recebidas</label>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.caixaOperacionalAtivo} onChange={e => setForm({...form, caixaOperacionalAtivo:e.target.checked})}/> Ativar abertura e fechamento de caixa</label>
           <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.lanchoneteAtiva} onChange={e => setForm({...form, lanchoneteAtiva:e.target.checked})}/> Ativar modo lanchonete</label>
+          {form.lanchoneteAtiva && <label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={form.temaLanchoneteAtivo} onChange={e => setForm({...form, temaLanchoneteAtivo:e.target.checked})}/> Usar visual amarelo e vermelho</label>}
           {erro && <p role="alert" className="text-rose-500 text-sm">{erro}</p>}
           <button disabled={salvando} className="btn-primary w-full p-3 font-bold uppercase tracking-widest">{salvando ? 'Criando...' : 'Criar loja'}</button>
         </form>
@@ -87,13 +89,14 @@ function Plataforma({ token, onLogout }) {
           {lojas.map(loja => <div key={loja.id} className="border border-current/15 p-4 space-y-3">
             <div className="flex justify-between gap-3">
             <div><strong>{loja.nome}</strong><p className="text-xs opacity-50">{loja.slug}</p></div>
-            <div className="text-right text-xs"><p>{loja.ativa ? 'Ativa' : 'Bloqueada'}</p><p className="opacity-50">{loja.financeiroAtivo ? 'Com financeiro' : 'Sem financeiro'}</p><p className="opacity-50">{loja.fotosAtivas ? 'Com fotos' : 'Sem fotos'}</p><p className="opacity-50">{loja.notasFiscaisAtivas ? 'Com notas recebidas' : 'Sem notas recebidas'}</p><p className="opacity-50">{loja.caixaOperacionalAtivo ? 'Caixa por operadora' : 'Caixa acumulado'}</p><p className="opacity-50">{loja.lanchoneteAtiva ? 'Modo lanchonete ativo' : 'Estoque e varejo'}</p></div>
+            <div className="text-right text-xs"><p>{loja.ativa ? 'Ativa' : 'Bloqueada'}</p><p className="opacity-50">{loja.financeiroAtivo ? 'Com financeiro' : 'Sem financeiro'}</p><p className="opacity-50">{loja.fotosAtivas ? 'Com fotos' : 'Sem fotos'}</p><p className="opacity-50">{loja.notasFiscaisAtivas ? 'Com notas recebidas' : 'Sem notas recebidas'}</p><p className="opacity-50">{loja.caixaOperacionalAtivo ? 'Caixa por operadora' : 'Caixa acumulado'}</p><p className="opacity-50">{loja.lanchoneteAtiva ? 'Modo lanchonete ativo' : 'Estoque e varejo'}</p>{loja.lanchoneteAtiva && <p className="opacity-50">{loja.temaLanchoneteAtivo ? 'Visual de lanchonete' : 'Visual padrão'}</p>}</div>
             </div>
             <div className="flex flex-wrap gap-2 text-[10px] uppercase font-bold tracking-wider">
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/status`, { ativa: !loja.ativa })}>{loja.ativa ? 'Bloquear' : 'Reativar'}</button>
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { financeiroAtivo: !loja.financeiroAtivo }))}>{loja.financeiroAtivo ? 'Desligar financeiro' : 'Ligar financeiro'}</button>
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { fotosAtivas: !loja.fotosAtivas }))}>{loja.fotosAtivas ? 'Desligar fotos' : 'Ligar fotos'}</button>
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { lanchoneteAtiva: !loja.lanchoneteAtiva }))}>{loja.lanchoneteAtiva ? 'Desligar lanchonete' : 'Ligar lanchonete'}</button>
+              {loja.lanchoneteAtiva && <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { temaLanchoneteAtivo: !loja.temaLanchoneteAtivo }))}>{loja.temaLanchoneteAtivo ? 'Usar visual padrão' : 'Usar visual lanchonete'}</button>}
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { notasFiscaisAtivas: !loja.notasFiscaisAtivas }))}>{loja.notasFiscaisAtivas ? 'Desligar notas' : 'Ligar notas'}</button>
               <button className="btn-secondary px-3 py-2" onClick={() => atualizar(`/plataforma/lojas/${loja.id}/configuracao`, configuracao(loja, { caixaOperacionalAtivo: !loja.caixaOperacionalAtivo }))}>{loja.caixaOperacionalAtivo ? 'Desligar caixa real' : 'Ligar caixa real'}</button>
               <button className="btn-secondary px-3 py-2" onClick={() => alterarTexto(loja, 'whatsapp', 'WhatsApp com DDI e DDD')}>Alterar WhatsApp</button>

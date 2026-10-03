@@ -23,6 +23,28 @@
   --glass-shadow: rgba(0, 0, 0, 0.8);
 }
 
+/* Identidade opcional para lojas de alimentação. */
+.tema-lanchonete {
+  --bg-color: #fff8df;
+  --text-color: #3f170f;
+  --glass-bg: rgba(255, 252, 235, 0.9);
+  --glass-border: rgba(180, 35, 24, 0.22);
+  --glass-line: #b42318;
+  --glass-shadow: rgba(113, 40, 18, 0.13);
+  --lanchonete-vermelho: #b42318;
+  --lanchonete-amarelo: #f5b814;
+}
+.dark .tema-lanchonete {
+  --bg-color: #24100c;
+  --text-color: #fff4ce;
+  --glass-bg: rgba(55, 20, 14, 0.88);
+  --glass-border: rgba(255, 199, 42, 0.25);
+  --glass-line: #ffc72a;
+  --glass-shadow: rgba(0, 0, 0, 0.5);
+  --lanchonete-vermelho: #e54835;
+  --lanchonete-amarelo: #ffc72a;
+}
+
 body {
   font-family: 'Outfit', sans-serif;
   background-color: var(--bg-color);
@@ -65,6 +87,15 @@ body {
   /* Fundo escuro para o texto branco brilhar */
   background-image: url('/apopo.jpeg'); 
 }
+.bg-dinamico.tema-lanchonete {
+  background-color:var(--bg-color);
+  background-image:radial-gradient(circle at 12% 8%,rgba(245,184,20,.25),transparent 32%),radial-gradient(circle at 92% 82%,rgba(180,35,24,.15),transparent 35%),linear-gradient(135deg,#fffdf3,#fff3c8);
+}
+.dark .bg-dinamico.tema-lanchonete { background-image:radial-gradient(circle at 12% 8%,rgba(255,199,42,.13),transparent 30%),radial-gradient(circle at 92% 82%,rgba(229,72,53,.18),transparent 36%),linear-gradient(135deg,#1d0c09,#35150e); }
+.tema-lanchonete .btn-primary { background:var(--lanchonete-vermelho); border-color:var(--lanchonete-vermelho); color:#fff8df; }
+.tema-lanchonete .lanchonete-tabs button.active,.tema-lanchonete .guided-title > span,.tema-lanchonete .config-lanchonete-nav button.active { background:var(--lanchonete-vermelho); color:#fff8df; }
+.tema-lanchonete .lanchonete-tabs button.active { box-shadow:inset 0 -4px 0 var(--lanchonete-amarelo); }
+.tema-lanchonete .cardapio-destaque { background:var(--lanchonete-vermelho); color:#fff8df; }
 
 /* Contraste explícito nos dois temas; não depende de currentColor. */
 .btn-primary {
@@ -444,6 +475,10 @@ textarea.control-field {
 @media (min-width: 1400px) { .pdv-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } }
 
 /* Lanchonete: balcão, cozinha e configuração em uma experiência mobile-first. */
+.lanchonete-indicadores { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; margin:1rem 0; }
+.lanchonete-indicadores > div { display:flex; min-height:72px; flex-direction:column; justify-content:center; padding:.7rem .9rem; }
+.lanchonete-indicadores strong { font-size:1.55rem; font-weight:950; line-height:1; }
+.lanchonete-indicadores span { margin-top:.3rem; font-size:.68rem; font-weight:850; text-transform:uppercase; opacity:.56; }
 .lanchonete-live { display:flex; align-items:center; gap:.5rem; padding:.65rem .85rem; border:1px solid color-mix(in srgb,var(--text-color) 15%,transparent); font-size:.7rem; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
 .lanchonete-live i { width:8px; height:8px; border-radius:99px; background:#10b981; box-shadow:0 0 0 5px #10b98122; animation:pulse 1.8s infinite; }
 .lanchonete-tabs { display:grid; grid-template-columns:repeat(2,1fr); gap:.5rem; margin-bottom:1rem; padding:.4rem; background:color-mix(in srgb,var(--text-color) 5%,transparent); border:1px solid color-mix(in srgb,var(--text-color) 10%,transparent); }
@@ -472,7 +507,8 @@ textarea.control-field {
 .mesa-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
 .mesa-grid button { display:flex; min-height:92px; flex-direction:column; align-items:center; justify-content:center; gap:.25rem; border:1px solid color-mix(in srgb,var(--text-color) 16%,transparent); background:color-mix(in srgb,var(--text-color) 3%,transparent); }
 .mesa-grid button.active { border:2px solid var(--text-color); background:color-mix(in srgb,var(--text-color) 9%,transparent); }
-.mesa-grid button:disabled { opacity:.3; cursor:not-allowed; }
+.mesa-grid button.occupied { border-color:#f59e0b; background:#f59e0b18; }
+.mesa-grid button.occupied strong { margin-top:.15rem; color:#b45309; font-size:.78rem; }
 .mesa-grid small { opacity:.55; }
 .category-scroll { display:flex; max-width:100%; gap:.5rem; overflow-x:auto; scrollbar-width:none; }
 .category-scroll button { flex:none; min-height:52px; padding:0 1rem; border:1px solid color-mix(in srgb,var(--text-color) 14%,transparent); font-weight:800; }
@@ -548,6 +584,11 @@ textarea.control-field {
 .cozinha-vazia { min-height:60dvh; }.cozinha-vazia > svg { width:70px; height:70px; }
 .historico-pedidos { display:grid; gap:.7rem; }.historico-pedidos article { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem; }.historico-pedidos small { font-size:.68rem; font-weight:800; opacity:.5; }.historico-pedidos h3 { margin:.15rem 0; font-size:1.05rem; font-weight:900; }.historico-pedidos p { font-size:.76rem; opacity:.58; }.historico-pedidos article > div:last-child { display:flex; flex-direction:column; align-items:end; gap:.45rem; }.pedido-status { padding:.3rem .45rem; font-size:.6rem; font-weight:950; text-transform:uppercase; }.pedido-status.status-finalizado { color:#047857;background:#10b98122; }.pedido-status.status-cancelado { color:#be123c;background:#f43f5e22; }
 .payment-total { display:flex; align-items:end; justify-content:space-between; padding:1rem; color:var(--bg-color); background:var(--text-color); }.payment-total strong { font-size:1.7rem; }
+.payment-order-summary { display:flex; flex-direction:column; gap:.2rem; padding:.75rem; border:1px solid color-mix(in srgb,var(--text-color) 12%,transparent); }
+.payment-order-summary span { font-size:.65rem; font-weight:900; text-transform:uppercase; opacity:.5; }
+.payment-order-summary b { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.8rem; }
+.cash-shortcuts { display:flex; gap:.4rem; margin-top:.45rem; overflow-x:auto; }
+.cash-shortcuts button { flex:none; min-height:40px; padding:.45rem .65rem; border:1px solid color-mix(in srgb,var(--text-color) 18%,transparent); font-size:.72rem; font-weight:850; }
 .payment-finish > div:first-child p { margin-top:.25rem; font-size:.8rem; opacity:.6; }
 .change-highlight { display:block; margin-top:.45rem; padding:.65rem; color:#047857; background:#10b98118; font-size:1rem; font-weight:950; text-align:center; }
 .cash-open-summary { display:grid; grid-template-columns:1fr; gap:.8rem 1.5rem; }
@@ -562,6 +603,7 @@ textarea.control-field {
 .finish-summary > strong { margin:.15rem 0 .5rem; font-size:1.8rem; }
 .finish-summary small { display:flex; justify-content:space-between; padding:.2rem 0; }
 .finish-summary b { margin-top:.45rem; padding-top:.45rem; border-top:1px dashed color-mix(in srgb,var(--text-color) 20%,transparent); }
+.finish-close { display:flex; min-height:44px; align-items:center; justify-content:center; gap:.4rem; font-size:.75rem; font-weight:850; opacity:.65; }
 .split-payment-row { display:flex; min-height:58px; align-items:center; gap:.7rem; }.split-payment-row > span { display:flex; min-width:115px; align-items:center; gap:.45rem; }.split-payment-row svg { width:18px; }.split-payment-row input { flex:1; }
 .split-total { display:flex; justify-content:space-between; padding:.75rem; color:#b45309; background:#f59e0b18; font-weight:900; }.split-total.ok { color:#047857; background:#10b98118; }
 .config-lanchonete { display:grid; grid-template-columns:1fr; gap:1rem; }
@@ -574,8 +616,20 @@ textarea.control-field {
 .toggle-card { display:flex; min-height:70px; align-items:center; gap:.7rem; padding:.7rem; border:1px solid color-mix(in srgb,var(--text-color) 14%,transparent); }.toggle-card input { width:22px; height:22px; }.toggle-card span { display:flex; flex-direction:column; }.toggle-card small { opacity:.55; }
 .ingredient-row { display:grid; grid-template-columns:minmax(0,1fr) 85px 48px; gap:.4rem; }.option-config-row { display:grid; grid-template-columns:1fr 1fr 80px 48px; gap:.4rem; }
 .check-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.45rem; margin-top:.6rem; }.check-grid label { display:flex; min-height:48px; align-items:center; gap:.55rem; padding:.55rem; border:1px solid color-mix(in srgb,var(--text-color) 12%,transparent); font-weight:750; }.check-grid input { width:20px; height:20px; }
+.mesa-admin-grid { display:grid; gap:.7rem; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+.mesa-admin-card { display:flex; flex-direction:column; gap:.75rem; padding:1rem; }
+.mesa-admin-card > div { display:flex; align-items:center; gap:.65rem; }
+.mesa-admin-card > div > svg { width:28px; }
+.mesa-admin-card span { display:flex; flex-direction:column; }
+.mesa-admin-card small { font-size:.72rem; opacity:.58; }
+.mesa-admin-card > strong { color:#b45309; font-size:1.15rem; }
+.mesa-admin-card footer { display:flex; gap:.45rem; margin-top:auto; }
+.mesa-admin-card footer button { min-height:42px; flex:1; padding:.45rem; font-size:.72rem; font-weight:850; }
+.mesa-admin-card.occupied { border-color:#f59e0b; background:#f59e0b12; }
+.mesa-admin-card.inactive { opacity:.55; }
 
 @media (min-width:640px) {
+  .lanchonete-indicadores { grid-template-columns:repeat(4,minmax(0,1fr)); }
   .cash-open-summary { grid-template-columns:repeat(3,minmax(0,1fr)); }
   .lanchonete-tabs { grid-template-columns:repeat(3,1fr); }
   .atendimento-tipos { grid-template-columns:repeat(4,1fr); }
